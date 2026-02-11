@@ -77,7 +77,6 @@ const Hero: React.FC = () => {
     },
   };
 
-  const nameText = "Gabriel R. Myeye";
   const firstName = "Gabriel R.";
   const lastName = "Myeye";
 
