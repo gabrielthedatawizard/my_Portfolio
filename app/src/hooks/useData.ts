@@ -11,41 +11,48 @@ import type {
   Skill,
   Testimonial,
   ContactMessage,
+  VisitorStats,
 } from '../types';
+
+type FetchOptions = {
+  select?: string;
+  filters?: Record<string, unknown>;
+  order?: { column: string; ascending?: boolean };
+  limit?: number;
+  realtime?: boolean;
+};
 
 // Generic hook for fetching data
 const useFetch = <T>(
   table: string,
-  options?: {
-    select?: string;
-    filters?: Record<string, unknown>;
-    order?: { column: string; ascending?: boolean };
-    limit?: number;
-  }
+  options?: FetchOptions
 ) => {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const optionsKey = JSON.stringify(options ?? {});
 
   const fetchData = useCallback(async () => {
+    const parsedOptions = JSON.parse(optionsKey) as FetchOptions;
+
     try {
       setLoading(true);
-      let query = supabase.from(table).select(options?.select || '*');
+      let query = supabase.from(table).select(parsedOptions.select || '*');
 
-      if (options?.filters) {
-        Object.entries(options.filters).forEach(([key, value]) => {
+      if (parsedOptions.filters) {
+        Object.entries(parsedOptions.filters).forEach(([key, value]) => {
           query = query.eq(key, value as string | number | boolean);
         });
       }
 
-      if (options?.order) {
-        query = query.order(options.order.column, {
-          ascending: options.order.ascending ?? true,
+      if (parsedOptions.order) {
+        query = query.order(parsedOptions.order.column, {
+          ascending: parsedOptions.order.ascending ?? true,
         });
       }
 
-      if (options?.limit) {
-        query = query.limit(options.limit);
+      if (parsedOptions.limit) {
+        query = query.limit(parsedOptions.limit);
       }
 
       const { data: result, error: supabaseError } = await query;
@@ -57,18 +64,45 @@ const useFetch = <T>(
     } finally {
       setLoading(false);
     }
-  }, [table, options]);
+  }, [table, optionsKey]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    const parsedOptions = JSON.parse(optionsKey) as FetchOptions;
+    if (!parsedOptions.realtime) return;
+    if (typeof supabase.channel !== 'function' || typeof supabase.removeChannel !== 'function') {
+      return;
+    }
+
+    const channel = supabase
+      .channel(`realtime:${table}:${optionsKey}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table },
+        () => {
+          void fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [fetchData, optionsKey, table]);
 
   return { data, loading, error, refetch: fetchData };
 };
 
 // Profile hook
 export const useProfile = () => {
-  return useFetch<Profile>('profiles', { limit: 1 });
+  return useFetch<Profile>('profiles', {
+    order: { column: 'updated_at', ascending: false },
+    limit: 1,
+    realtime: true,
+  });
 };
 
 // Projects hooks
@@ -80,6 +114,7 @@ export const useProjects = (filters?: { featured?: boolean; status?: string }) =
   return useFetch<Project>('projects', {
     filters: Object.keys(filterObj).length > 0 ? filterObj : undefined,
     order: { column: 'created_at', ascending: false },
+    realtime: true,
   });
 };
 
@@ -118,6 +153,7 @@ export const useCertificates = () => {
   return useFetch<Certificate>('certificates', {
     filters: { status: 'published' },
     order: { column: 'issue_date', ascending: false },
+    realtime: true,
   });
 };
 
@@ -127,6 +163,7 @@ export const usePosts = (limit?: number) => {
     filters: { status: 'published' },
     order: { column: 'published_at', ascending: false },
     limit,
+    realtime: true,
   });
 };
 
@@ -168,6 +205,7 @@ export const useGallery = (category?: string) => {
   return useFetch<GalleryItem>('gallery', {
     filters,
     order: { column: 'order', ascending: true },
+    realtime: true,
   });
 };
 
@@ -175,6 +213,7 @@ export const useGallery = (category?: string) => {
 export const useExperience = () => {
   return useFetch<Experience>('experience', {
     order: { column: 'order', ascending: true },
+    realtime: true,
   });
 };
 
@@ -182,6 +221,7 @@ export const useExperience = () => {
 export const useEducation = () => {
   return useFetch<Education>('education', {
     order: { column: 'order', ascending: true },
+    realtime: true,
   });
 };
 
@@ -193,6 +233,7 @@ export const useSkills = (category?: string) => {
   return useFetch<Skill>('skills', {
     filters: Object.keys(filters).length > 0 ? filters : undefined,
     order: { column: 'order', ascending: true },
+    realtime: true,
   });
 };
 
@@ -201,6 +242,7 @@ export const useTestimonials = () => {
   return useFetch<Testimonial>('testimonials', {
     filters: { status: 'published' },
     order: { column: 'order', ascending: true },
+    realtime: true,
   });
 };
 
@@ -208,7 +250,69 @@ export const useTestimonials = () => {
 export const useContactMessages = () => {
   return useFetch<ContactMessage>('contact_messages', {
     order: { column: 'created_at', ascending: false },
+    realtime: true,
   });
+};
+
+// Visitor stats hook
+export const useVisitorStats = () => {
+  const [stats, setStats] = useState<VisitorStats>({
+    totalPageViews: 0,
+    uniqueVisitors: 0,
+    todayPageViews: 0,
+    todayUniqueVisitors: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  const fetchVisitorStats = useCallback(async () => {
+    try {
+      setLoading(true);
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const [
+        { count: totalPageViews },
+        { data: allVisitorSessions },
+        { count: todayPageViews, data: todayVisitorSessions },
+      ] = await Promise.all([
+        supabase.from('visitors').select('*', { count: 'exact', head: true }),
+        supabase.from('visitors').select('session_id'),
+        supabase
+          .from('visitors')
+          .select('session_id', { count: 'exact' })
+          .gte('visited_at', startOfToday.toISOString()),
+      ]);
+
+      const uniqueVisitors = new Set(
+        (allVisitorSessions ?? []).map(
+          (entry: { session_id: string | null }) => entry.session_id
+        )
+      ).size;
+
+      const todayUniqueVisitors = new Set(
+        (todayVisitorSessions ?? []).map(
+          (entry: { session_id: string | null }) => entry.session_id
+        )
+      ).size;
+
+      setStats({
+        totalPageViews: totalPageViews ?? 0,
+        uniqueVisitors,
+        todayPageViews: todayPageViews ?? 0,
+        todayUniqueVisitors,
+      });
+    } catch (error) {
+      console.error('Error fetching visitor stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchVisitorStats();
+  }, [fetchVisitorStats]);
+
+  return { stats, loading, refetch: fetchVisitorStats };
 };
 
 // Stats hook

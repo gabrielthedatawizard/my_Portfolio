@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import {
   FolderGit2,
   Award,
   FileText,
   Image,
+  Settings,
   MessageSquare,
   TrendingUp,
   Users,
   Eye,
+  RefreshCw,
 } from 'lucide-react';
-import { useStats } from '../../hooks/useData';
+import { useContactMessages, useStats, useVisitorStats } from '../../hooks/useData';
+import { Button } from '@/components/ui/button';
 
 interface QuickStat {
   label: string;
@@ -19,24 +22,58 @@ interface QuickStat {
   color: string;
 }
 
-const DashboardHome = () => {
-  const { stats, loading } = useStats();
-  const [quickStats, setQuickStats] = useState<QuickStat[]>([]);
+type DashboardSection =
+  | 'projects'
+  | 'certificates'
+  | 'posts'
+  | 'gallery'
+  | 'messages'
+  | 'settings';
 
-  useEffect(() => {
-    setQuickStats([
+interface DashboardHomeProps {
+  onNavigate: (section: DashboardSection) => void;
+  onSyncSampleContent: () => Promise<void>;
+  syncingSampleContent: boolean;
+}
+
+const DashboardHome = ({
+  onNavigate,
+  onSyncSampleContent,
+  syncingSampleContent,
+}: DashboardHomeProps) => {
+  const { stats, loading } = useStats();
+  const { data: messages } = useContactMessages();
+  const { stats: visitorStats, loading: visitorLoading } = useVisitorStats();
+
+  const unreadMessages = useMemo(
+    () => messages.filter((message) => !message.read).length,
+    [messages]
+  );
+
+  const quickStats = useMemo<QuickStat[]>(
+    () => [
       { label: 'Total Projects', value: stats.projectsCount, icon: FolderGit2, change: '+2 this month', color: 'from-blue-500/20 to-cyan-500/20' },
       { label: 'Certificates', value: stats.certificatesCount, icon: Award, change: '+1 this month', color: 'from-green-500/20 to-emerald-500/20' },
-      { label: 'Blog Posts', value: 8, icon: FileText, change: '+3 this month', color: 'from-purple-500/20 to-pink-500/20' },
-      { label: 'Gallery Items', value: 24, icon: Image, change: '+5 this month', color: 'from-orange-500/20 to-amber-500/20' },
-    ]);
-  }, [stats]);
+      { label: 'Unread Messages', value: unreadMessages, icon: MessageSquare, change: 'Contact inbox', color: 'from-purple-500/20 to-pink-500/20' },
+      { label: 'Unique Visitors', value: visitorStats.uniqueVisitors, icon: Users, change: 'All-time sessions', color: 'from-orange-500/20 to-amber-500/20' },
+    ],
+    [stats.projectsCount, stats.certificatesCount, unreadMessages, visitorStats.uniqueVisitors]
+  );
 
   const recentActivity = [
     { action: 'New project added', item: 'Health Data Analytics Platform', time: '2 hours ago' },
     { action: 'Certificate updated', item: 'AWS Solutions Architect', time: '1 day ago' },
     { action: 'Blog post published', item: 'The Future of Digital Health', time: '2 days ago' },
     { action: 'New message received', item: 'From John Doe', time: '3 days ago' },
+  ];
+
+  const quickActions: Array<{ label: string; icon: React.ElementType; section: DashboardSection }> = [
+    { label: 'Add Project', icon: FolderGit2, section: 'projects' },
+    { label: 'Add Certificate', icon: Award, section: 'certificates' },
+    { label: 'New Blog Post', icon: FileText, section: 'posts' },
+    { label: 'Upload Image', icon: Image, section: 'gallery' },
+    { label: 'View Messages', icon: MessageSquare, section: 'messages' },
+    { label: 'Settings', icon: Settings, section: 'settings' },
   ];
 
   return (
@@ -72,7 +109,7 @@ const DashboardHome = () => {
                 )}
               </div>
               <p className="text-3xl font-bold text-white mb-1">
-                {loading ? '-' : stat.value}
+                {loading || visitorLoading ? '-' : stat.value}
               </p>
               <p className="text-sm text-white/60">{stat.label}</p>
             </div>
@@ -106,23 +143,33 @@ const DashboardHome = () => {
         <div className="bg-charcoal-light border border-white/5 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-white mb-6">Quick Actions</h3>
           <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: 'Add Project', icon: FolderGit2, action: () => {} },
-              { label: 'Add Certificate', icon: Award, action: () => {} },
-              { label: 'New Blog Post', icon: FileText, action: () => {} },
-              { label: 'Upload Image', icon: Image, action: () => {} },
-              { label: 'View Messages', icon: MessageSquare, action: () => {} },
-              { label: 'View Analytics', icon: Eye, action: () => {} },
-            ].map((action, index) => (
+            {quickActions.map((action, index) => (
               <button
                 key={index}
-                onClick={action.action}
+                onClick={() => onNavigate(action.section)}
                 className="flex flex-col items-center gap-3 p-6 bg-white/[0.02] rounded-lg hover:bg-white/5 transition-colors group"
               >
                 <action.icon className="h-6 w-6 text-electric group-hover:scale-110 transition-transform" />
                 <span className="text-sm text-white/70">{action.label}</span>
               </button>
             ))}
+          </div>
+
+          <div className="mt-6 rounded-lg border border-white/10 bg-white/[0.02] p-4">
+            <p className="text-sm text-white/70 mb-2">Sync Frontend Sample Data</p>
+            <p className="text-xs text-white/50 mb-4">
+              Imports hardcoded frontend samples into Supabase so they can be edited in the dashboard.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full border-white/20 text-white hover:bg-white/10"
+              onClick={() => void onSyncSampleContent()}
+              disabled={syncingSampleContent}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${syncingSampleContent ? 'animate-spin' : ''}`} />
+              {syncingSampleContent ? 'Syncing...' : 'Sync Samples'}
+            </Button>
           </div>
         </div>
       </div>
@@ -135,22 +182,28 @@ const DashboardHome = () => {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-electric/10 rounded-full mb-4">
               <Users className="h-8 w-8 text-electric" />
             </div>
-            <p className="text-2xl font-bold text-white mb-1">1,234</p>
+            <p className="text-2xl font-bold text-white mb-1">
+              {visitorLoading ? '-' : visitorStats.totalPageViews}
+            </p>
             <p className="text-sm text-white/60">Total Profile Views</p>
           </div>
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/10 rounded-full mb-4">
               <TrendingUp className="h-8 w-8 text-green-500" />
             </div>
-            <p className="text-2xl font-bold text-white mb-1">+23%</p>
-            <p className="text-sm text-white/60">Growth This Month</p>
+            <p className="text-2xl font-bold text-white mb-1">
+              {visitorLoading ? '-' : visitorStats.todayUniqueVisitors}
+            </p>
+            <p className="text-sm text-white/60">Unique Visitors Today</p>
           </div>
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-500/10 rounded-full mb-4">
               <Eye className="h-8 w-8 text-purple-500" />
             </div>
-            <p className="text-2xl font-bold text-white mb-1">567</p>
-            <p className="text-sm text-white/60">Project Views</p>
+            <p className="text-2xl font-bold text-white mb-1">
+              {visitorLoading ? '-' : visitorStats.todayPageViews}
+            </p>
+            <p className="text-sm text-white/60">Page Views Today</p>
           </div>
         </div>
       </div>

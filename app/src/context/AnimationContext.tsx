@@ -23,6 +23,14 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   // Initialize Lenis smooth scroll
   useEffect(() => {
+    // Prefer native scrolling when user requests reduced motion.
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) return;
+
     const lenisInstance = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
@@ -38,17 +46,17 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Connect Lenis to GSAP ScrollTrigger
     lenisInstance.on('scroll', ScrollTrigger.update);
 
-    gsap.ticker.add((time) => {
+    const raf = (time: number) => {
       lenisInstance.raf(time * 1000);
-    });
+    };
+
+    gsap.ticker.add(raf);
 
     gsap.ticker.lagSmoothing(0);
 
     return () => {
       lenisInstance.destroy();
-      gsap.ticker.remove((time) => {
-        lenisInstance.raf(time * 1000);
-      });
+      gsap.ticker.remove(raf);
     };
   }, []);
 
@@ -56,31 +64,38 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     if (!isLoading) return;
 
-    const duration = 2500; // 2.5 seconds loading
-    const interval = 50;
-    const steps = duration / interval;
-    let currentStep = 0;
+    const durationMs = 950; // 700-1200ms target window
+    const exitDelayMs = 180; // allow a brief "100%" moment before fade-out
+    const start = performance.now();
 
-    const timer = setInterval(() => {
-      currentStep++;
-      const progress = Math.min((currentStep / steps) * 100, 100);
-      
-      // Non-linear progress for suspense
-      const easedProgress = progress < 50 
-        ? progress * 0.7 // Slower at start
-        : 35 + (progress - 50) * 1.3; // Faster at end
-      
-      setLoadingProgress(Math.min(easedProgress, 100));
+    let rafId = 0;
+    let exitTimeoutId: number | undefined;
 
-      if (currentStep >= steps) {
-        clearInterval(timer);
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 300);
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / durationMs, 1);
+      const eased = easeOutCubic(t);
+      const nextProgress = Math.round(eased * 100);
+      setLoadingProgress(nextProgress);
+
+      if (t < 1) {
+        rafId = window.requestAnimationFrame(tick);
+        return;
       }
-    }, interval);
 
-    return () => clearInterval(timer);
+      setLoadingProgress(100);
+      exitTimeoutId = window.setTimeout(() => {
+        setIsLoading(false);
+      }, exitDelayMs);
+    };
+
+    rafId = window.requestAnimationFrame(tick);
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      if (exitTimeoutId) window.clearTimeout(exitTimeoutId);
+    };
   }, [isLoading]);
 
   const scrollTo = useCallback((target: string | number) => {

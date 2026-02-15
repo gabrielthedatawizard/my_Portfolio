@@ -1,6 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { useTheme } from '@/context/ThemeContext';
+import { useGallery } from '@/hooks/useData';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 interface PhotoItem {
   id: number;
@@ -9,7 +11,7 @@ interface PhotoItem {
   span: string;
 }
 
-const photos: PhotoItem[] = [
+const samplePhotos: PhotoItem[] = [
   {
     id: 1,
     src: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&h=600&fit=crop',
@@ -127,6 +129,7 @@ const SplitPhotoItem: React.FC<{ photo: PhotoItem; index: number }> = ({ photo, 
 
 const SplitPhotoGallery: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { data: galleryData, loading } = useGallery();
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start end', 'end start'],
@@ -134,6 +137,19 @@ const SplitPhotoGallery: React.FC = () => {
 
   // Background parallax
   const backgroundY = useTransform(scrollYProgress, [0, 1], ['0%', '20%']);
+
+  const photos = useMemo<PhotoItem[]>(() => {
+    if (!isSupabaseConfigured) return samplePhotos;
+    if (galleryData.length === 0) return [];
+
+    const spanPattern = ['col-span-1 row-span-2', 'col-span-1 row-span-1', 'col-span-1 row-span-1'];
+    return galleryData.map((item, index) => ({
+      id: index + 1,
+      src: item.media_url,
+      alt: item.caption || `Gallery image ${index + 1}`,
+      span: spanPattern[index % spanPattern.length],
+    }));
+  }, [galleryData]);
 
   return (
     <section ref={containerRef} className="relative py-24 md:py-32 bg-charcoal overflow-hidden">
@@ -168,6 +184,10 @@ const SplitPhotoGallery: React.FC = () => {
             <SplitPhotoItem key={photo.id} photo={photo} index={index} />
           ))}
         </div>
+
+        {!loading && photos.length === 0 && (
+          <p className="text-center text-white/40 mt-8">No gallery items published yet.</p>
+        )}
       </div>
     </section>
   );

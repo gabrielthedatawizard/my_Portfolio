@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { syncSampleContentToSupabase } from '@/lib/sampleContent';
 
 // Admin sections
 import DashboardHome from './sections/DashboardHome';
@@ -60,6 +61,12 @@ const AdminDashboard = () => {
   const { user, signOut } = useAuth();
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [syncingSampleContent, setSyncingSampleContent] = useState(false);
+
+  const navigateToSection = (section: AdminSection) => {
+    setActiveSection(section);
+    setSidebarOpen(false);
+  };
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -71,10 +78,41 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSyncSampleContent = async () => {
+    setSyncingSampleContent(true);
+    try {
+      const result = await syncSampleContentToSupabase();
+      const totalInserted =
+        result.projects +
+        result.certificates +
+        result.gallery +
+        result.experience +
+        result.education +
+        result.skills;
+
+      if (totalInserted === 0) {
+        toast.success('Sample content is already synced');
+      } else {
+        toast.success(`Sample content synced (${totalInserted} new records)`);
+      }
+    } catch (error) {
+      console.error('Failed to sync sample content:', error);
+      toast.error('Failed to sync sample content');
+    } finally {
+      setSyncingSampleContent(false);
+    }
+  };
+
   const renderSection = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <DashboardHome />;
+        return (
+          <DashboardHome
+            onNavigate={navigateToSection}
+            onSyncSampleContent={handleSyncSampleContent}
+            syncingSampleContent={syncingSampleContent}
+          />
+        );
       case 'projects':
         return <ProjectsManager />;
       case 'certificates':
@@ -94,12 +132,18 @@ const AdminDashboard = () => {
       case 'settings':
         return <SettingsManager />;
       default:
-        return <DashboardHome />;
+        return (
+          <DashboardHome
+            onNavigate={navigateToSection}
+            onSyncSampleContent={handleSyncSampleContent}
+            syncingSampleContent={syncingSampleContent}
+          />
+        );
     }
   };
 
   return (
-    <div className="min-h-screen bg-charcoal flex">
+    <div className="min-h-screen bg-charcoal lg:flex">
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
@@ -110,9 +154,9 @@ const AdminDashboard = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-charcoal-light border-r border-white/5 transform transition-transform duration-300 lg:transform-none ${
+        className={`fixed inset-y-0 left-0 z-50 w-64 h-[100dvh] bg-charcoal-light border-r border-white/5 transform transition-transform duration-300 flex flex-col ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
+        } lg:relative lg:inset-auto lg:translate-x-0 lg:h-auto lg:min-h-screen`}
       >
         {/* Sidebar Header */}
         <div className="p-6 border-b border-white/5">
@@ -123,14 +167,11 @@ const AdminDashboard = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="p-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto p-4 space-y-1 pb-6">
           {menuItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => {
-                setActiveSection(item.id);
-                setSidebarOpen(false);
-              }}
+              onClick={() => navigateToSection(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                 activeSection === item.id
                   ? 'bg-electric/10 text-electric'
@@ -144,7 +185,7 @@ const AdminDashboard = () => {
         </nav>
 
         {/* Sidebar Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/5">
+        <div className="p-4 border-t border-white/5">
           <div className="flex items-center gap-3 mb-4 px-4">
             <div className="w-8 h-8 bg-electric/20 rounded-full flex items-center justify-center">
               <span className="text-electric text-sm font-medium">
@@ -168,17 +209,17 @@ const AdminDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 min-w-0">
         {/* Header */}
-        <header className="h-16 bg-charcoal-light border-b border-white/5 flex items-center justify-between px-4 lg:px-8">
+        <header className="sticky top-0 z-30 h-16 bg-charcoal-light border-b border-white/5 flex items-center justify-between px-4 lg:px-8">
           <button
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setSidebarOpen((open) => !open)}
             className="lg:hidden p-2 text-white/70 hover:text-white"
           >
             <Menu className="h-6 w-6" />
           </button>
 
-          <h1 className="text-lg font-semibold text-white hidden lg:block">
+          <h1 className="text-lg font-semibold text-white">
             {menuItems.find((item) => item.id === activeSection)?.label}
           </h1>
 
@@ -195,7 +236,7 @@ const AdminDashboard = () => {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-auto p-4 lg:p-8">
+        <div className="p-4 lg:p-8">
           {renderSection()}
         </div>
       </main>

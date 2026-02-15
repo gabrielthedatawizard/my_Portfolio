@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
-import { Mail, MapPin, Phone, Send, Linkedin, Github, Twitter } from 'lucide-react';
+import { Mail, MapPin, MessageCircle, Send, Linkedin, Instagram } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { motion, useInView } from 'framer-motion';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 const Contact: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,19 +18,44 @@ const Contact: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
 
+  const CONTACT = {
+    email: 'gabrielthedatawizard@gmail.com',
+    location: 'Dodoma, Tanzania',
+    linkedin: 'https://www.linkedin.com/in/gabriel-myeye-361487307/',
+    instagram: 'https://www.instagram.com/meulic/',
+    whatsappNumber: '+255765578690',
+    whatsappLink: 'https://wa.me/255765578690',
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      if (!isSupabaseConfigured) {
+        toast.error('Contact form is not configured yet.');
+        return;
+      }
 
-    toast.success('Message Sent!', {
-      description: 'Thank you for reaching out. I\'ll get back to you soon.',
-    });
+      const { error } = await supabase.from('contact_messages').insert({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        subject: formData.subject.trim(),
+        message: formData.message.trim(),
+      });
 
-    setFormData({ name: '', email: '', subject: '', message: '' });
-    setIsSubmitting(false);
+      if (error) throw error;
+
+      toast.success('Message Sent!', {
+        description: 'Thank you for reaching out. I will get back to you soon.',
+      });
+      setFormData({ name: '', email: '', subject: '', message: '' });
+    } catch (error) {
+      console.error('Failed to send contact message:', error);
+      toast.error('Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -40,28 +66,30 @@ const Contact: React.FC = () => {
   };
 
   const socialLinks = [
-    { icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
-    { icon: Github, href: 'https://github.com', label: 'GitHub' },
-    { icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
+    { icon: Linkedin, href: CONTACT.linkedin, label: 'LinkedIn' },
+    { icon: Instagram, href: CONTACT.instagram, label: 'Instagram' },
+    { icon: MessageCircle, href: CONTACT.whatsappLink, label: 'WhatsApp' },
   ];
 
   const contactInfo = [
     {
       icon: Mail,
       label: 'Email',
-      value: 'contact@gabrielmyeye.com',
-      href: 'mailto:contact@gabrielmyeye.com',
+      value: CONTACT.email,
+      href: `mailto:${CONTACT.email}`,
     },
     {
-      icon: Phone,
-      label: 'Phone',
-      value: '+254 712 345 678',
-      href: 'tel:+254712345678',
+      icon: MessageCircle,
+      label: 'WhatsApp',
+      value: `WhatsApp (${CONTACT.whatsappNumber})`,
+      href: CONTACT.whatsappLink,
+      target: '_blank' as const,
+      rel: 'noopener noreferrer',
     },
     {
       icon: MapPin,
       label: 'Location',
-      value: 'Nairobi, Kenya',
+      value: CONTACT.location,
       href: null,
     },
   ];
@@ -183,6 +211,8 @@ const Contact: React.FC = () => {
                       {info.href ? (
                         <a 
                           href={info.href} 
+                          target={(info as { target?: string }).target}
+                          rel={(info as { rel?: string }).rel}
                           className="text-white hover:text-electric transition-colors"
                         >
                           {info.value}
@@ -206,6 +236,7 @@ const Contact: React.FC = () => {
               </h3>
               <div className="flex gap-4">
                 {socialLinks.map((social, index) => (
+                  !social.href ? null : (
                   <motion.a
                     key={social.label}
                     href={social.href}
@@ -221,6 +252,7 @@ const Contact: React.FC = () => {
                   >
                     <social.icon className="h-5 w-5 text-white/60 group-hover:text-electric transition-colors" />
                   </motion.a>
+                  )
                 ))}
               </div>
             </motion.div>

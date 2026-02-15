@@ -1,6 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Database, Brain, Activity, Code, BarChart3, Wrench, Users } from 'lucide-react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
+import { useSkills } from '@/hooks/useData';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 interface SkillCategory {
   id: string;
@@ -82,8 +84,34 @@ const Skills: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>(skillCategories[0].id);
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const { data: skillsData } = useSkills();
+  const useSampleData = !isSupabaseConfigured;
 
-  const currentCategory = skillCategories.find(c => c.id === activeCategory);
+  const categories = useMemo(() => {
+    if (useSampleData) return skillCategories;
+
+    const groupedSkills = new Map<string, string[]>();
+    skillsData.forEach((skill) => {
+      const existing = groupedSkills.get(skill.category) ?? [];
+      groupedSkills.set(skill.category, [...existing, skill.name]);
+    });
+
+    return skillCategories
+      .map((category) => ({
+        ...category,
+        skills: groupedSkills.get(category.id) ?? [],
+      }))
+      .filter((category) => category.skills.length > 0);
+  }, [skillsData, useSampleData]);
+
+  useEffect(() => {
+    if (categories.length === 0) return;
+    if (!categories.some((category) => category.id === activeCategory)) {
+      setActiveCategory(categories[0].id);
+    }
+  }, [activeCategory, categories]);
+
+  const currentCategory = categories.find((category) => category.id === activeCategory);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -197,7 +225,7 @@ const Skills: React.FC = () => {
             initial="hidden"
             animate={isInView ? 'visible' : 'hidden'}
           >
-            {skillCategories.map((category) => {
+            {categories.map((category) => {
               const Icon = category.icon;
               const isActive = activeCategory === category.id;
               return (
@@ -252,6 +280,11 @@ const Skills: React.FC = () => {
 
           {/* Skills Display */}
           <div className="lg:col-span-8">
+            {!currentCategory && (
+              <div className="bg-charcoal-light border border-white/5 rounded-2xl p-8 text-white/60">
+                No skills available yet.
+              </div>
+            )}
             <AnimatePresence mode="wait">
               {currentCategory && (
                 <motion.div

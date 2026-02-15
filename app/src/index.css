@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -64,6 +64,11 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
+    overflow-wrap: break-word;
+  }
+
+  h1, h2, h3 {
+    overflow-wrap: anywhere;
   }
   
   ::selection {
@@ -676,47 +681,127 @@ input:focus, textarea:focus {
 }
 
 .light .bg-charcoal {
-  background-color: #f5f5f5;
+  background-color: #f5f7fb;
+}
+
+.light .bg-charcoal\/90 {
+  background-color: rgba(248, 250, 252, 0.9);
+}
+
+.light .bg-charcoal\/98 {
+  background-color: rgba(248, 250, 252, 0.98);
 }
 
 .light .bg-charcoal-light {
   background-color: #ffffff;
 }
 
+.light .bg-charcoal-light\/95 {
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.light .bg-charcoal-lighter {
+  background-color: #ffffff;
+}
+
 .light .text-white {
-  color: #1a1a1a;
+  color: #0f172a;
+}
+
+.light .text-white\/80 {
+  color: rgba(15, 23, 42, 0.8);
 }
 
 .light .text-white\/60 {
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(15, 23, 42, 0.6);
 }
 
 .light .text-white\/70 {
-  color: rgba(0, 0, 0, 0.7);
+  color: rgba(15, 23, 42, 0.7);
+}
+
+.light .text-white\/50 {
+  color: rgba(15, 23, 42, 0.5);
 }
 
 .light .text-white\/40 {
-  color: rgba(0, 0, 0, 0.4);
+  color: rgba(15, 23, 42, 0.4);
+}
+
+.light .text-white\/30 {
+  color: rgba(15, 23, 42, 0.3);
+}
+
+.light .text-white\/20 {
+  color: rgba(15, 23, 42, 0.2);
+}
+
+.light .text-white\/10 {
+  color: rgba(15, 23, 42, 0.1);
+}
+
+.light .hover\:text-white:hover {
+  color: hsl(var(--primary));
 }
 
 .light .border-white\/10 {
-  border-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(15, 23, 42, 0.1);
 }
 
 .light .border-white\/5 {
-  border-color: rgba(0, 0, 0, 0.05);
+  border-color: rgba(15, 23, 42, 0.05);
 }
 
 .light .border-white\/20 {
-  border-color: rgba(0, 0, 0, 0.2);
+  border-color: rgba(15, 23, 42, 0.2);
+}
+
+.light .border-white\/30 {
+  border-color: rgba(15, 23, 42, 0.3);
+}
+
+.light .border-white\/40 {
+  border-color: rgba(15, 23, 42, 0.4);
 }
 
 .light .bg-white\/5 {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: rgba(15, 23, 42, 0.05);
+}
+
+.light .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.1);
+}
+
+.light .bg-white\/20 {
+  background-color: rgba(15, 23, 42, 0.2);
+}
+
+.light .bg-white\/\[0\.02\] {
+  background-color: rgba(15, 23, 42, 0.03);
 }
 
 .light .bg-gradient-to-b.from-electric\/5 {
   background: linear-gradient(to bottom, rgba(42, 107, 255, 0.05), transparent);
+}
+
+.light .bg-\[\#0a0a0c\],
+.light .bg-\[\#0A0A0A\] {
+  background-color: #f8fafc;
+}
+
+.light .from-\[\#0a0a0c\] {
+  --tw-gradient-from: rgb(248 250 252 / var(--tw-gradient-from-opacity, 1)) var(--tw-gradient-from-position);
+  --tw-gradient-to: rgb(248 250 252 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.light .via-\[\#0f0f12\] {
+  --tw-gradient-to: rgb(241 245 249 / 0) var(--tw-gradient-to-position);
+  --tw-gradient-stops: var(--tw-gradient-from), rgb(241 245 249 / var(--tw-gradient-via-opacity, 1)) var(--tw-gradient-via-position), var(--tw-gradient-to);
+}
+
+.light .to-\[\#0a0a0c\] {
+  --tw-gradient-to: rgb(248 250 252 / var(--tw-gradient-to-opacity, 1)) var(--tw-gradient-to-position);
 }
 
 /* 3D Perspective utilities */

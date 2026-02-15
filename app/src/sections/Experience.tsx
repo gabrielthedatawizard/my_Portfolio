@@ -1,35 +1,16 @@
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Briefcase, GraduationCap, MapPin, Calendar } from 'lucide-react';
 import { motion, useInView } from 'framer-motion';
+import type { Education as EducationItem, Experience as ExperienceItem } from '@/types';
+import { useEducation, useExperience } from '@/hooks/useData';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
-interface ExperienceItem {
-  id: string;
-  title: string;
-  organization: string;
-  location: string;
-  start_date: string;
-  end_date?: string;
-  current: boolean;
-  description: string;
-  highlights: string[];
-}
-
-interface EducationItem {
-  id: string;
-  school: string;
-  program: string;
-  degree: string;
-  start_date: string;
-  end_date?: string;
-  current: boolean;
-}
-
-const experienceItems: ExperienceItem[] = [
+const sampleExperienceItems: ExperienceItem[] = [
   {
     id: '1',
     title: 'Health Data Analyst',
     organization: 'Digital Health Solutions Ltd',
-    location: 'Nairobi, Kenya',
+    location: 'Dodoma, Tanzania',
     start_date: '2022-03-01',
     current: true,
     description: 'Leading data analytics initiatives for healthcare clients, developing predictive models and building data pipelines.',
@@ -38,12 +19,13 @@ const experienceItems: ExperienceItem[] = [
       'Built ETL pipelines processing 1M+ records daily',
       'Led team of 5 data analysts',
     ],
+    order: 0,
   },
   {
     id: '2',
     title: 'Database Administrator',
     organization: 'Tech Health Systems',
-    location: 'Nairobi, Kenya',
+    location: 'Dodoma, Tanzania',
     start_date: '2020-06-01',
     end_date: '2022-02-28',
     current: false,
@@ -53,12 +35,13 @@ const experienceItems: ExperienceItem[] = [
       'Implemented HIPAA-compliant data security measures',
       'Migrated legacy systems to modern cloud infrastructure',
     ],
+    order: 1,
   },
   {
     id: '3',
     title: 'Data Analyst Intern',
     organization: 'County Health Department',
-    location: 'Mombasa, Kenya',
+    location: 'Dodoma, Tanzania',
     start_date: '2019-01-01',
     end_date: '2019-12-31',
     current: false,
@@ -67,27 +50,28 @@ const experienceItems: ExperienceItem[] = [
       'Developed dashboards for COVID-19 tracking',
       'Created automated reporting system',
     ],
+    order: 2,
   },
 ];
 
-const educationItems: EducationItem[] = [
+const sampleEducationItems: EducationItem[] = [
   {
     id: '1',
-    school: 'University of Nairobi',
-    program: 'Health Information Science',
-    degree: 'Bachelor of Science',
-    start_date: '2016-09-01',
-    end_date: '2020-06-01',
+    school: 'Ilboru High School',
+    program: 'Advanced Level',
+    start_date: '2021-01-01',
+    end_date: '2023-12-31',
     current: false,
+    order: 0,
   },
   {
     id: '2',
-    school: 'Moringa School',
-    program: 'Data Science Bootcamp',
-    degree: 'Certificate',
-    start_date: '2020-08-01',
-    end_date: '2020-12-01',
+    school: "St Joseph Boys' Science School",
+    program: 'Ordinary Level',
+    start_date: '2017-01-01',
+    end_date: '2020-12-31',
     current: false,
+    order: 1,
   },
 ];
 
@@ -140,6 +124,18 @@ const TimelineCard: React.FC<{
 const Experience: React.FC = () => {
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const { data: experienceData, loading: experienceLoading } = useExperience();
+  const { data: educationData, loading: educationLoading } = useEducation();
+
+  const useSampleData = !isSupabaseConfigured;
+  const experienceItems = useMemo(
+    () => (useSampleData ? sampleExperienceItems : experienceData),
+    [experienceData, useSampleData]
+  );
+  const educationItems = useMemo(
+    () => (useSampleData ? sampleEducationItems : educationData),
+    [educationData, useSampleData]
+  );
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -253,10 +249,12 @@ const Experience: React.FC = () => {
                   <p className="text-electric mb-3">{item.organization}</p>
                   
                   <div className="flex flex-wrap gap-4 text-sm text-white/50 mb-4">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-4 w-4" />
-                      {item.location}
-                    </span>
+                    {item.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-4 w-4" />
+                        {item.location}
+                      </span>
+                    )}
                     <span className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
                       {new Date(item.start_date).getFullYear()} - {item.current ? 'Present' : item.end_date ? new Date(item.end_date).getFullYear() : ''}
@@ -266,7 +264,7 @@ const Experience: React.FC = () => {
                   <p className="text-white/70 text-sm mb-4">{item.description}</p>
 
                   <ul className="space-y-2">
-                    {item.highlights.map((highlight, i) => (
+                    {(item.highlights ?? []).map((highlight, i) => (
                       <motion.li 
                         key={i} 
                         className="text-sm text-white/50 flex items-start gap-2"
@@ -282,6 +280,10 @@ const Experience: React.FC = () => {
                 </TimelineCard>
               ))}
             </div>
+
+            {!experienceLoading && experienceItems.length === 0 && (
+              <p className="text-sm text-white/40">No experience entries available.</p>
+            )}
           </motion.div>
 
           {/* Education */}
@@ -309,7 +311,7 @@ const Experience: React.FC = () => {
                   <h4 className="text-lg font-semibold text-white mb-1">
                     {item.program}
                   </h4>
-                  <p className="text-electric mb-1">{item.degree}</p>
+                  {item.degree && <p className="text-electric mb-1">{item.degree}</p>}
                   <p className="text-white/60 text-sm mb-3">{item.school}</p>
                   
                   <div className="flex items-center gap-1 text-sm text-white/50">
@@ -327,6 +329,10 @@ const Experience: React.FC = () => {
               animate={isInView ? { scaleY: 1 } : {}}
               transition={{ duration: 1.5, delay: 0.5 }}
             />
+
+            {!educationLoading && educationItems.length === 0 && (
+              <p className="text-sm text-white/40">No education entries available.</p>
+            )}
           </motion.div>
         </div>
       </div>

@@ -3,12 +3,10 @@ import { Download, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useTheme } from '@/context/ThemeContext';
-import { useProfile } from '@/hooks/useData';
 
 const Hero: React.FC = () => {
   const heroRef = useRef<HTMLDivElement>(null);
   const { animationsEnabled, reducedMotion, resolvedTheme } = useTheme();
-  const { data: profileData } = useProfile();
   const prefersReducedMotion = useReducedMotion();
   const isLight = resolvedTheme === 'light';
   const shouldAnimate = animationsEnabled && !reducedMotion && !prefersReducedMotion;
@@ -20,28 +18,9 @@ const Hero: React.FC = () => {
     }
   };
 
-  const handleDownloadCv = async () => {
-    const cvUrl = profileData?.[0]?.cv_url || '/cv.pdf';
-
-    try {
-      const response = await fetch(cvUrl);
-      if (!response.ok) {
-        throw new Error('Failed to fetch CV file');
-      }
-
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = objectUrl;
-      link.download = 'Gabriel-Myeye-CV.pdf';
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(objectUrl);
-    } catch (error) {
-      console.error('CV download fallback triggered:', error);
-      window.open(cvUrl, '_blank', 'noopener,noreferrer');
-    }
+  const handleDownloadCv = () => {
+    // Use the built-in CV page (print-to-PDF) so the downloaded CV is a real, structured document.
+    window.open('/cv?download=1', '_blank', 'noopener,noreferrer');
   };
 
   const initialMotionState = shouldAnimate ? 'hidden' : 'visible';
@@ -82,6 +61,24 @@ const Hero: React.FC = () => {
       transition: { duration: 0.65, delay: 0.08, ease: [0.22, 1, 0.36, 1] as const },
     },
   };
+
+  const headlineVariants = {
+    hidden: {},
+    visible: {
+      transition: { staggerChildren: 0.06, delayChildren: 0.02 },
+    },
+  };
+
+  const headlineWordVariants = {
+    hidden: { y: '110%', opacity: 0 },
+    visible: {
+      y: '0%',
+      opacity: 1,
+      transition: { duration: 0.7, ease: [0.22, 1, 0.36, 1] as const },
+    },
+  };
+
+  const headlineWords = ['Hi,', "I'm", 'Gabriel', 'R.', 'Myeye'];
 
   return (
     <section
@@ -138,27 +135,32 @@ const Hero: React.FC = () => {
                   className="relative z-10"
                 >
                   {/* Subtle gradient ring + soft shadow */}
-                  <div
-                    className={`rounded-full p-[2px] ${
-                      isLight
-                        ? 'bg-gradient-to-tr from-[#2563eb]/55 via-slate-200 to-white'
-                        : 'bg-gradient-to-tr from-[#60a5fa]/35 via-white/10 to-white/0'
-                    } shadow-[0_30px_80px_rgba(2,6,23,0.12)]`}
+                  <motion.div
+                    animate={shouldAnimate ? { y: [0, -3, 0] } : undefined}
+                    transition={shouldAnimate ? { duration: 6.5, repeat: Infinity, ease: 'easeInOut' } : undefined}
                   >
                     <div
-                      className={`rounded-full overflow-hidden ${isLight ? 'bg-white' : 'bg-[#0b0f19]'}`}
-                      style={{ width: 'clamp(220px, 28vw, 420px)', height: 'clamp(220px, 28vw, 420px)' }}
+                      className={`rounded-full p-[2px] ${
+                        isLight
+                          ? 'bg-gradient-to-tr from-electric/60 via-slate-200 to-white'
+                          : 'bg-gradient-to-tr from-[#60a5fa]/35 via-white/10 to-white/0'
+                      } shadow-[0_30px_80px_rgba(2,6,23,0.12)]`}
                     >
-                      <img
-                        src="/portrait.jpg"
-                        alt="Gabriel R. Myeye"
-                        className="h-full w-full object-cover"
-                        style={{ objectPosition: '50% 22%' }}
-                        loading="eager"
-                        decoding="async"
-                      />
+                      <div
+                        className={`rounded-full overflow-hidden ${isLight ? 'bg-white' : 'bg-[#0b0f19]'}`}
+                        style={{ width: 'clamp(220px, 28vw, 420px)', height: 'clamp(220px, 28vw, 420px)' }}
+                      >
+                        <img
+                          src="/portrait.jpg"
+                          alt="Gabriel R. Myeye"
+                          className="h-full w-full object-cover"
+                          style={{ objectPosition: '50% 22%' }}
+                          loading="eager"
+                          decoding="async"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
                 </motion.div>
 
                 {/* Tiny dotted micro-element (premium, minimal) */}
@@ -166,7 +168,7 @@ const Hero: React.FC = () => {
                   aria-hidden
                   className={`pointer-events-none absolute -bottom-6 -left-6 hidden h-24 w-24 rounded-2xl opacity-60 sm:block ${
                     isLight
-                      ? "bg-[radial-gradient(circle_at_center,rgba(37,99,235,0.45)_1px,transparent_1px)]"
+                      ? "bg-[radial-gradient(circle_at_center,rgba(42,107,255,0.45)_1px,transparent_1px)]"
                       : "bg-[radial-gradient(circle_at_center,rgba(96,165,250,0.5)_1px,transparent_1px)]"
                   } bg-[length:10px_10px]`}
                 />
@@ -181,16 +183,24 @@ const Hero: React.FC = () => {
               className="flex flex-col justify-center"
             >
               <motion.h1
-                variants={itemVariants}
+                variants={headlineVariants}
+                aria-label="Hi, I'm Gabriel R. Myeye"
                 className={`text-[clamp(2.1rem,4.5vw,3.6rem)] font-semibold tracking-tight ${
                   isLight ? 'text-slate-950' : 'text-white'
                 }`}
               >
-                Hi, I{'\u2019'}m Gabriel R. Myeye
+                {headlineWords.map((word, idx) => (
+                  <span key={`${word}-${idx}`} className="inline-block overflow-hidden align-bottom">
+                    <motion.span variants={headlineWordVariants} className="inline-block">
+                      {word}
+                      {idx < headlineWords.length - 1 ? '\u00A0' : ''}
+                    </motion.span>
+                  </span>
+                ))}
               </motion.h1>
 
               <motion.div variants={itemVariants} className="mt-5 flex items-center gap-3">
-                <span aria-hidden className="h-2 w-2 rounded-full bg-[#2563eb]" />
+                <span aria-hidden className="h-2 w-2 rounded-full bg-electric" />
                 <span aria-hidden className={`h-px w-10 ${isLight ? 'bg-slate-200' : 'bg-white/20'}`} />
                 <p className={`text-base sm:text-lg font-light ${isLight ? 'text-slate-700' : 'text-white/75'}`}>
                   Health Information Scientist & Data Innovator
@@ -211,7 +221,7 @@ const Hero: React.FC = () => {
                   onClick={scrollToProjects}
                   size="lg"
                   aria-label="View projects"
-                  className={`rounded-full bg-[#2563eb] px-6 py-6 text-base text-white transition-colors hover:bg-[#1d4ed8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2 ${
+                  className={`rounded-full bg-electric px-6 py-6 text-base text-white transition-colors hover:bg-electric-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric focus-visible:ring-offset-2 ${
                     isLight ? 'focus-visible:ring-offset-white' : 'focus-visible:ring-offset-[#0b0f19]'
                   }`}
                 >
@@ -224,7 +234,7 @@ const Hero: React.FC = () => {
                   size="lg"
                   aria-label="Download CV"
                   onClick={handleDownloadCv}
-                  className={`rounded-full px-6 py-6 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2 ${
+                  className={`rounded-full px-6 py-6 text-base transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric focus-visible:ring-offset-2 ${
                     isLight
                       ? 'border-slate-300 bg-transparent text-slate-900 hover:bg-slate-50 hover:border-slate-400 focus-visible:ring-offset-white'
                       : 'border-white/15 bg-transparent text-white hover:bg-white/5 hover:border-white/25 focus-visible:ring-offset-[#0b0f19]'

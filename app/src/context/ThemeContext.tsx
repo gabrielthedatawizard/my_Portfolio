@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from 'react';
 
 type Theme = 'dark' | 'light' | 'system';
 
@@ -35,19 +35,36 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return false;
   });
 
-  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
+  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>(() => {
+    if (typeof window === 'undefined') return 'dark';
 
-  useEffect(() => {
-    const root = window.document.documentElement;
+    const storedTheme = (localStorage.getItem('theme') as Theme) || 'system';
     const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    const resolved = theme === 'system' ? systemTheme : theme;
-    
-    setResolvedTheme(resolved);
-    
+    return storedTheme === 'system' ? systemTheme : storedTheme;
+  });
+
+  const applyResolvedTheme = (resolved: 'dark' | 'light') => {
+    const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(resolved);
-    
+    setResolvedTheme(resolved);
+  };
+
+  // Apply theme before paint to avoid a light/dark flash on reload.
+  useLayoutEffect(() => {
+    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const resolved = theme === 'system' ? systemTheme : theme;
+    applyResolvedTheme(resolved);
     localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  // If user chooses "system", keep in sync with OS theme changes.
+  useEffect(() => {
+    if (theme !== 'system') return;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => applyResolvedTheme(mediaQuery.matches ? 'dark' : 'light');
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme]);
 
   useEffect(() => {

@@ -7,6 +7,8 @@ import {
 } from '@/components/ui/dialog';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import type { Certificate } from '../types';
+import { useCertificates } from '@/hooks/useData';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 // Sample certificates data
 const sampleCertificates: Certificate[] = [
@@ -91,13 +93,23 @@ const CertificateCard: React.FC<{
         className="absolute inset-0 bg-gradient-to-br from-electric/10 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
       />
 
-      {/* Icon with animation */}
-      <motion.div 
-        className="relative w-14 h-14 bg-electric/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-electric/20 transition-colors duration-300"
-        whileHover={{ rotate: 10, scale: 1.1 }}
-      >
-        <Award className="h-7 w-7 text-electric" />
-      </motion.div>
+      {cert.media_url ? (
+        <div className="relative mb-4 overflow-hidden rounded-xl border border-white/10 aspect-video">
+          <img
+            src={cert.media_url}
+            alt={cert.title}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        </div>
+      ) : (
+        <motion.div 
+          className="relative w-14 h-14 bg-electric/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-electric/20 transition-colors duration-300"
+          whileHover={{ rotate: 10, scale: 1.1 }}
+        >
+          <Award className="h-7 w-7 text-electric" />
+        </motion.div>
+      )}
 
       {/* Content */}
       <div className="relative">
@@ -142,6 +154,9 @@ const Certificates: React.FC = () => {
   const [selectedCertificate, setSelectedCertificate] = useState<Certificate | null>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const { data: certificatesData, loading } = useCertificates();
+  const useSampleData = !isSupabaseConfigured;
+  const certificates = useSampleData ? sampleCertificates : certificatesData;
 
   return (
     <section
@@ -203,7 +218,7 @@ const Certificates: React.FC = () => {
 
         {/* Certificates Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sampleCertificates.map((cert, index) => (
+          {certificates.map((cert, index) => (
             <CertificateCard
               key={cert.id}
               cert={cert}
@@ -213,6 +228,10 @@ const Certificates: React.FC = () => {
             />
           ))}
         </div>
+
+        {!loading && certificates.length === 0 && (
+          <p className="text-center text-white/40 mt-8">No certificates published yet.</p>
+        )}
 
         {/* Achievement highlight */}
         <motion.div
@@ -226,7 +245,7 @@ const Certificates: React.FC = () => {
             whileHover={{ scale: 1.05 }}
           >
             <Trophy className="h-5 w-5 text-electric" />
-            <span className="text-white/80">15+ Professional Certifications</span>
+            <span className="text-white/80">{certificates.length}+ Professional Certifications</span>
           </motion.div>
         </motion.div>
       </div>

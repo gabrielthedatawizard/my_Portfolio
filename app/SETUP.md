@@ -38,8 +38,13 @@ This guide will walk you through setting up the Gabriel Myeye Portfolio from scr
 
 1. In your Supabase dashboard, go to the SQL Editor
 2. Create a "New query"
-3. Copy and paste the entire SQL schema from the README.md file
-4. Click "Run" to create all tables
+3. Copy and paste the SQL from `supabase/schema.sql`
+4. If you already created tables before, run `supabase/visitors_and_contact_policies.sql` after the main schema
+5. Ensure the schema includes:
+   - `visitors` table for portfolio analytics
+   - `Public insert contact messages` policy
+   - `Public insert visitors` policy
+6. Click "Run" to create all tables
 
 ### 4. Set Up Storage
 
@@ -150,6 +155,7 @@ git push origin main
    - **Education**: Add academic background
    - **Skills**: Add skills with categories and proficiency levels
    - **Messages**: View contact form submissions
+   - **Dashboard**: Monitor visitor and content metrics
    - **Settings**: Update profile information
 
 ### Adding Content via Supabase Directly

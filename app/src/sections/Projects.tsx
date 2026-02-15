@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { ArrowUpRight, ExternalLink, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/dialog';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import type { Project } from '../types';
+import { useProjects } from '@/hooks/useData';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 // Sample projects data
 const sampleProjects: Project[] = [
@@ -88,7 +90,7 @@ const sampleProjects: Project[] = [
   },
 ];
 
-const filterTags = ['All', 'Data Analytics', 'Machine Learning', 'Database', 'Web Development', 'Healthcare'];
+const defaultFilterTags = ['All', 'Data Analytics', 'Machine Learning', 'Database', 'Web Development', 'Healthcare'];
 
 // Project image component with hover effects
 const ProjectImage: React.FC<{ project: Project }> = ({ project }) => {
@@ -184,10 +186,24 @@ const Projects: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState('All');
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const { data: projectsData, loading } = useProjects({ status: 'published' });
+  const useSampleData = !isSupabaseConfigured;
+  const projects = useSampleData ? sampleProjects : projectsData;
+
+  const filterTags = useMemo(() => {
+    if (useSampleData) return defaultFilterTags;
+    const tagSet = new Set<string>();
+    projectsData.forEach((project) => {
+      (project.tags ?? []).forEach((tag) => {
+        if (tag) tagSet.add(tag);
+      });
+    });
+    return ['All', ...Array.from(tagSet)];
+  }, [projectsData, useSampleData]);
 
   const filteredProjects = activeFilter === 'All'
-    ? sampleProjects
-    : sampleProjects.filter(p => p.tags.includes(activeFilter));
+    ? projects
+    : projects.filter((project) => project.tags.includes(activeFilter));
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -341,6 +357,10 @@ const Projects: React.FC = () => {
             ))}
           </motion.div>
         </AnimatePresence>
+
+        {!loading && filteredProjects.length === 0 && (
+          <p className="text-center text-white/40 mt-8">No published projects yet.</p>
+        )}
 
         {/* View All Button */}
         <motion.div 

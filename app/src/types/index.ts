@@ -155,6 +155,17 @@ export interface ContactMessage {
   created_at?: string;
 }
 
+// Visitor Analytics Types
+export interface Visitor {
+  id: string;
+  session_id: string;
+  path: string;
+  referrer?: string;
+  user_agent?: string;
+  viewport?: string;
+  visited_at?: string;
+}
+
 // User Types (for admin)
 export interface User {
   id: string;
@@ -194,4 +205,11 @@ export interface Stats {
   certificatesCount: number;
   yearsExperience: number;
   skillsCount: number;
+}
+
+export interface VisitorStats {
+  totalPageViews: number;
+  uniqueVisitors: number;
+  todayPageViews: number;
+  todayUniqueVisitors: number;
 }

@@ -402,6 +402,35 @@ export interface Database {
           created_at?: string;
         };
       };
+      visitors: {
+        Row: {
+          id: string;
+          session_id: string;
+          path: string;
+          referrer: string | null;
+          user_agent: string | null;
+          viewport: string | null;
+          visited_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          path: string;
+          referrer?: string | null;
+          user_agent?: string | null;
+          viewport?: string | null;
+          visited_at?: string;
+        };
+        Update: {
+          id?: string;
+          session_id?: string;
+          path?: string;
+          referrer?: string | null;
+          user_agent?: string | null;
+          viewport?: string | null;
+          visited_at?: string;
+        };
+      };
       contact_messages: {
         Row: {
           id: string;

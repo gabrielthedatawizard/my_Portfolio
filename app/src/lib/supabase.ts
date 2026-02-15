@@ -3,6 +3,11 @@ import type { Database } from '../types/database';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+export const isSupabaseConfigured = Boolean(
+  supabaseUrl &&
+  supabaseAnonKey &&
+  supabaseUrl.startsWith('http')
+);
 
 // Create a mock client if credentials are not available
 const createMockClient = () => {
@@ -47,7 +52,7 @@ const createMockClient = () => {
 let supabaseClient: any;
 
 try {
-  if (supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http')) {
+  if (isSupabaseConfigured) {
     supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey);
     console.log('Supabase client created successfully');
   } else {

@@ -6,21 +6,22 @@ import { useTheme } from '@/context/ThemeContext';
 const SettingsPanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const { theme, setTheme, animationsEnabled, setAnimationsEnabled } = useTheme();
+  const { theme, setTheme, resolvedTheme, animationsEnabled, setAnimationsEnabled } = useTheme();
+  const isLight = resolvedTheme === 'light';
 
   // Close panel when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: PointerEvent) => {
       if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('pointerdown', handleClickOutside);
     }
 
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('pointerdown', handleClickOutside);
   }, [isOpen]);
 
   const themeOptions = [
@@ -38,14 +39,25 @@ const SettingsPanel: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ duration: 0.2 }}
-            className="absolute bottom-16 right-0 w-72 bg-charcoal-light/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden"
+            id="settings-panel"
+            className={`absolute bottom-16 right-0 w-72 backdrop-blur-xl border rounded-2xl shadow-2xl overflow-hidden ${
+              isLight
+                ? 'bg-card/95 border-border/70 shadow-black/10'
+                : 'bg-card/90 border-white/10 shadow-black/50'
+            }`}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-white/5">
-              <h3 className="text-white font-semibold">Settings</h3>
+            <div className={`flex items-center justify-between p-4 border-b ${isLight ? 'border-border/60' : 'border-white/10'}`}>
+              <h3 className={`${isLight ? 'text-foreground' : 'text-white'} font-semibold`}>Settings</h3>
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1 text-white/50 hover:text-white transition-colors"
+                className={`p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric focus-visible:ring-offset-2 ${
+                  isLight
+                    ? 'text-slate-600 hover:text-slate-900 focus-visible:ring-offset-white'
+                    : 'text-white/60 hover:text-white focus-visible:ring-offset-charcoal'
+                }`}
+                aria-label="Close settings"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -54,19 +66,22 @@ const SettingsPanel: React.FC = () => {
             <div className="p-4 space-y-6">
               {/* Theme Selection */}
               <div>
-                <label className="text-white/60 text-sm mb-3 block">Theme</label>
+                <label className={`text-sm mb-3 block ${isLight ? 'text-slate-600' : 'text-white/60'}`}>Theme</label>
                 <div className="grid grid-cols-3 gap-2">
                   {themeOptions.map((option) => (
                     <motion.button
                       key={option.value}
+                      type="button"
                       onClick={() => setTheme(option.value)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-300 ${
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric focus-visible:ring-offset-2 ${
                         theme === option.value
-                          ? 'bg-electric/20 border-electric/50 text-electric'
-                          : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
-                      }`}
+                          ? 'bg-electric/15 border-electric/60 text-electric'
+                          : isLight
+                            ? 'bg-background border-border/70 text-slate-600 hover:text-slate-950 hover:border-border'
+                            : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                      } ${isLight ? 'focus-visible:ring-offset-white' : 'focus-visible:ring-offset-charcoal'}`}
                     >
                       <option.icon className="h-5 w-5" />
                       <span className="text-xs">{option.label}</span>
@@ -77,15 +92,18 @@ const SettingsPanel: React.FC = () => {
 
               {/* Animations Toggle */}
               <div>
-                <label className="text-white/60 text-sm mb-3 block">Animations</label>
+                <label className={`text-sm mb-3 block ${isLight ? 'text-slate-600' : 'text-white/60'}`}>Animations</label>
                 <motion.button
+                  type="button"
                   onClick={() => setAnimationsEnabled(!animationsEnabled)}
                   whileTap={{ scale: 0.98 }}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all duration-300 ${
+                  className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric focus-visible:ring-offset-2 ${
                     animationsEnabled
-                      ? 'bg-electric/20 border-electric/50 text-electric'
-                      : 'bg-white/5 border-white/10 text-white/60'
-                  }`}
+                      ? 'bg-electric/15 border-electric/60 text-electric'
+                      : isLight
+                        ? 'bg-background border-border/70 text-slate-600'
+                        : 'bg-white/5 border-white/10 text-white/60'
+                  } ${isLight ? 'focus-visible:ring-offset-white' : 'focus-visible:ring-offset-charcoal'}`}
                 >
                   <div className="flex items-center gap-3">
                     {animationsEnabled ? (
@@ -111,9 +129,9 @@ const SettingsPanel: React.FC = () => {
                 </motion.button>
               </div>
 
-              {/* Brand Label */}
-              <div className="pt-4 border-t border-white/5">
-                <p className="text-white/40 text-xs text-center">
+                  {/* Brand Label */}
+              <div className={`pt-4 border-t ${isLight ? 'border-border/60' : 'border-white/10'}`}>
+                <p className={`text-xs text-center ${isLight ? 'text-slate-500' : 'text-white/40'}`}>
                   Gabriel's Portfolio
                   <br />
                   <span className="text-electric">@gabrielthedatawizard</span>
@@ -129,7 +147,14 @@ const SettingsPanel: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="p-4 bg-electric hover:bg-electric/90 text-white rounded-full shadow-lg shadow-electric/30 transition-colors"
+        className={`p-4 rounded-full shadow-lg shadow-electric/25 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-electric focus-visible:ring-offset-2 ${
+          isLight
+            ? 'bg-electric hover:bg-electric/90 text-white focus-visible:ring-offset-white'
+            : 'bg-electric hover:bg-electric/90 text-white focus-visible:ring-offset-charcoal'
+        }`}
+        aria-label="Open settings"
+        aria-controls="settings-panel"
+        aria-expanded={isOpen}
       >
         <AnimatePresence mode="wait">
           {isOpen ? (

@@ -1,4 +1,4 @@
-import { Linkedin, Github, Twitter, Mail, ArrowUp } from 'lucide-react';
+﻿import { Linkedin, Instagram, MessageCircle, ArrowUp } from 'lucide-react';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 
@@ -8,10 +8,9 @@ const Footer: React.FC = () => {
   const isInView = useInView(footerRef, { once: true, margin: '-50px' });
 
   const socialLinks = [
-    { icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
-    { icon: Github, href: 'https://github.com', label: 'GitHub' },
-    { icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
-    { icon: Mail, href: 'mailto:contact@gabrielmyeye.com', label: 'Email' },
+    { icon: Linkedin, href: 'https://www.linkedin.com/in/gabriel-myeye-361487307/', label: 'LinkedIn' },
+    { icon: Instagram, href: 'https://www.instagram.com/meulic/', label: 'Instagram' },
+    { icon: MessageCircle, href: 'https://wa.me/255765578690', label: 'WhatsApp' },
   ];
 
   const navLinks = [
@@ -149,15 +148,15 @@ const Footer: React.FC = () => {
                 animate={isInView ? { opacity: 1 } : {}}
                 transition={{ delay: 0.5 }}
               >
-                Nairobi, Kenya
+                Dodoma, Tanzania
               </motion.li>
               <motion.li
                 initial={{ opacity: 0 }}
                 animate={isInView ? { opacity: 1 } : {}}
                 transition={{ delay: 0.55 }}
               >
-                <a href="mailto:contact@gabrielmyeye.com" className="hover:text-electric transition-colors">
-                  contact@gabrielmyeye.com
+                <a href="mailto:gabrielthedatawizard@gmail.com" className="hover:text-electric transition-colors">
+                  gabrielthedatawizard@gmail.com
                 </a>
               </motion.li>
               <motion.li
@@ -165,8 +164,14 @@ const Footer: React.FC = () => {
                 animate={isInView ? { opacity: 1 } : {}}
                 transition={{ delay: 0.6 }}
               >
-                <a href="tel:+254712345678" className="hover:text-electric transition-colors">
-                  +254 712 345 678
+                <a
+                  href="https://wa.me/255765578690"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-electric transition-colors"
+                  aria-label="WhatsApp +255765578690"
+                >
+                  WhatsApp
                 </a>
               </motion.li>
             </ul>
@@ -194,13 +199,7 @@ const Footer: React.FC = () => {
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ delay: 0.8 }}
           >
-            Designed & Built with
-            <motion.span
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 1, repeat: Infinity }}
-            >
-              ❤️
-            </motion.span>
+            Designed & Built with care.
           </motion.p>
         </motion.div>
       </div>
@@ -209,3 +208,4 @@ const Footer: React.FC = () => {
 };
 
 export default Footer;
+

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Edit2, Trash2, Briefcase, MapPin, Calendar } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Plus, Edit2, Trash2, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -10,47 +10,144 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import type { Experience } from '../../types';
+import { supabase } from '@/lib/supabase';
 
-const sampleExperience: Experience[] = [
-  {
-    id: '1',
-    title: 'Senior Data Analyst',
-    organization: 'Tanzania Health Information Systems',
-    location: 'Dar es Salaam, Tanzania',
-    start_date: '2022-01-01',
-    current: true,
-    description: 'Leading data analytics initiatives for national health information systems.',
-    highlights: ['Designed data quality monitoring systems', 'Reduced reporting errors by 60%'],
-    order: 1,
-  },
-  {
-    id: '2',
-    title: 'Database Administrator',
-    organization: 'Digital Health Solutions Ltd',
-    location: 'Dar es Salaam, Tanzania',
-    start_date: '2020-03-01',
-    end_date: '2021-12-31',
-    current: false,
-    description: 'Managed and optimized database systems for healthcare applications.',
-    highlights: ['Optimized query performance by 80%', 'Implemented automated backups'],
-    order: 2,
-  },
-];
+type ExperienceFormValues = {
+  title: string;
+  organization: string;
+  location: string;
+  start_date: string;
+  end_date: string;
+  current: boolean;
+  description: string;
+  highlights: string;
+  order: string;
+};
+
+const defaultFormValues: ExperienceFormValues = {
+  title: '',
+  organization: '',
+  location: '',
+  start_date: '',
+  end_date: '',
+  current: false,
+  description: '',
+  highlights: '',
+  order: '',
+};
+
+const mapExperienceToForm = (item: Experience | null): ExperienceFormValues => {
+  if (!item) return defaultFormValues;
+  return {
+    title: item.title ?? '',
+    organization: item.organization ?? '',
+    location: item.location ?? '',
+    start_date: item.start_date ?? '',
+    end_date: item.end_date ?? '',
+    current: Boolean(item.current),
+    description: item.description ?? '',
+    highlights: (item.highlights ?? []).join('\n'),
+    order: item.order.toString(),
+  };
+};
 
 const ExperienceManager = () => {
-  const [experience, setExperience] = useState<Experience[]>(sampleExperience);
+  const [experience, setExperience] = useState<Experience[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editingItem, setEditingItem] = useState<Experience | null>(null);
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this experience?')) {
-      setExperience(experience.filter((e) => e.id !== id));
+  const loadExperience = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('experience')
+        .select('*')
+        .order('order', { ascending: true });
+
+      if (error) throw error;
+      setExperience((data ?? []) as Experience[]);
+    } catch (error) {
+      console.error('Failed to load experience:', error);
+      toast.error('Failed to load experience');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadExperience();
+  }, [loadExperience]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this experience item?')) return;
+
+    try {
+      const { error } = await supabase.from('experience').delete().eq('id', id);
+      if (error) throw error;
+
+      setExperience((prev) => prev.filter((item) => item.id !== id));
       toast.success('Experience deleted');
+    } catch (error) {
+      console.error('Failed to delete experience:', error);
+      toast.error('Failed to delete experience');
     }
   };
 
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Present';
-    return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+  const handleSave = async (formValues: ExperienceFormValues) => {
+    setIsSaving(true);
+    try {
+      const payload = {
+        title: formValues.title.trim(),
+        organization: formValues.organization.trim(),
+        location: formValues.location.trim() || null,
+        start_date: formValues.start_date,
+        end_date: formValues.current ? null : formValues.end_date || null,
+        current: formValues.current,
+        description: formValues.description.trim(),
+        highlights: formValues.highlights
+          .split('\n')
+          .map((entry) => entry.trim())
+          .filter((entry) => entry.length > 0),
+        order: formValues.order ? Number(formValues.order) : 0,
+      };
+
+      if (editingItem) {
+        const { data, error } = await supabase
+          .from('experience')
+          .update(payload)
+          .eq('id', editingItem.id)
+          .select('*')
+          .single();
+        if (error) throw error;
+
+        setExperience((prev) =>
+          prev
+            .map((item) => (item.id === editingItem.id ? (data as Experience) : item))
+            .sort((a, b) => a.order - b.order)
+        );
+        toast.success('Experience updated');
+      } else {
+        const { data, error } = await supabase
+          .from('experience')
+          .insert(payload)
+          .select('*')
+          .single();
+        if (error) throw error;
+
+        setExperience((prev) => [...prev, data as Experience].sort((a, b) => a.order - b.order));
+        toast.success('Experience created');
+      }
+
+      setIsDialogOpen(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Failed to save experience:', error);
+      toast.error('Failed to save experience');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -58,118 +155,230 @@ const ExperienceManager = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white">Experience</h2>
-          <p className="text-white/60">Manage your work history</p>
+          <p className="text-white/60">Manage your work experience timeline</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="bg-electric hover:bg-electric-dark">
+        <Button
+          onClick={() => {
+            setEditingItem(null);
+            setIsDialogOpen(true);
+          }}
+          className="bg-electric hover:bg-electric-dark"
+        >
           <Plus className="h-4 w-4 mr-2" />
           Add Experience
         </Button>
       </div>
 
-      <div className="space-y-4">
-        {experience.map((exp) => (
-          <div
-            key={exp.id}
-            className="bg-charcoal-light border border-white/5 rounded-xl p-6 group hover:border-white/10 transition-colors"
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
+      {loading ? (
+        <div className="text-white/60">Loading experience...</div>
+      ) : (
+        <div className="space-y-4">
+          {experience.map((item) => (
+            <div
+              key={item.id}
+              className="bg-charcoal-light border border-white/5 rounded-xl p-6 group hover:border-white/10 transition-colors"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start gap-3">
                   <div className="p-2 bg-electric/10 rounded-lg">
                     <Briefcase className="h-4 w-4 text-electric" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-white">{exp.title}</h3>
-                    <p className="text-electric">{exp.organization}</p>
+                    <h3 className="font-semibold text-white">{item.title}</h3>
+                    <p className="text-sm text-electric">{item.organization}</p>
+                    <p className="text-xs text-white/40 mt-1">
+                      {item.start_date} - {item.current ? 'Present' : item.end_date || 'N/A'}
+                    </p>
                   </div>
-                  {exp.current && (
-                    <span className="px-2 py-0.5 bg-electric/20 text-electric text-xs rounded-full">
-                      Current
-                    </span>
-                  )}
                 </div>
-
-                <div className="flex flex-wrap items-center gap-4 text-sm text-white/60 mb-3 ml-11">
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {exp.location}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    {formatDate(exp.start_date)} - {formatDate(exp.end_date)}
-                  </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => {
+                      setEditingItem(item);
+                      setIsDialogOpen(true);
+                    }}
+                    className="p-2 text-white/40 hover:text-electric transition-colors"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => void handleDelete(item.id)}
+                    className="p-2 text-white/40 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
+              </div>
 
-                <p className="text-white/60 text-sm ml-11 mb-3">{exp.description}</p>
-
-                <ul className="space-y-1 ml-11">
-                  {exp.highlights?.map((highlight, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-white/50">
-                      <span className="w-1 h-1 bg-electric rounded-full mt-1.5 flex-shrink-0" />
-                      {highlight}
+              <p className="text-sm text-white/70 mb-3">{item.description}</p>
+              {(item.highlights ?? []).length > 0 && (
+                <ul className="space-y-1">
+                  {(item.highlights ?? []).map((highlight, index) => (
+                    <li key={index} className="text-xs text-white/50">
+                      - {highlight}
                     </li>
                   ))}
                 </ul>
-              </div>
-
-              <div className="flex gap-1 ml-4">
-                <button className="p-2 text-white/40 hover:text-electric transition-colors">
-                  <Edit2 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(exp.id)}
-                  className="p-2 text-white/40 hover:text-red-500 transition-colors"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
+              )}
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg bg-charcoal-light border-white/10 text-white max-h-[90vh] overflow-y-auto">
+      <Dialog
+        open={isDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditingItem(null);
+          setIsDialogOpen(open);
+        }}
+      >
+        <DialogContent className="max-w-2xl bg-charcoal-light border-white/10 text-white max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add Experience</DialogTitle>
+            <DialogTitle>{editingItem ? 'Edit Experience' : 'Add Experience'}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm text-white/60 mb-2">Job Title</label>
-              <Input className="bg-white/5 border-white/10 text-white" placeholder="e.g., Senior Data Analyst" />
-            </div>
-            <div>
-              <label className="block text-sm text-white/60 mb-2">Organization</label>
-              <Input className="bg-white/5 border-white/10 text-white" />
-            </div>
-            <div>
-              <label className="block text-sm text-white/60 mb-2">Location</label>
-              <Input className="bg-white/5 border-white/10 text-white" />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-white/60 mb-2">Start Date</label>
-                <Input type="date" className="bg-white/5 border-white/10 text-white" />
-              </div>
-              <div>
-                <label className="block text-sm text-white/60 mb-2">End Date</label>
-                <Input type="date" className="bg-white/5 border-white/10 text-white" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm text-white/60 mb-2">Description</label>
-              <textarea className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white min-h-[80px]" />
-            </div>
-            <div className="flex justify-end gap-4">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button className="bg-electric hover:bg-electric-dark">Add Experience</Button>
-            </div>
-          </div>
+          <ExperienceForm
+            initialValues={mapExperienceToForm(editingItem)}
+            saving={isSaving}
+            onSave={handleSave}
+            onCancel={() => {
+              setIsDialogOpen(false);
+              setEditingItem(null);
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+interface ExperienceFormProps {
+  initialValues: ExperienceFormValues;
+  saving: boolean;
+  onSave: (values: ExperienceFormValues) => Promise<void>;
+  onCancel: () => void;
+}
+
+const ExperienceForm: React.FC<ExperienceFormProps> = ({
+  initialValues,
+  saving,
+  onSave,
+  onCancel,
+}) => {
+  const [formData, setFormData] = useState<ExperienceFormValues>(initialValues);
+
+  useEffect(() => {
+    setFormData(initialValues);
+  }, [initialValues]);
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    await onSave(formData);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm text-white/60 mb-2">Title</label>
+          <Input
+            value={formData.title}
+            onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+            className="bg-white/5 border-white/10 text-white"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-white/60 mb-2">Organization</label>
+          <Input
+            value={formData.organization}
+            onChange={(e) => setFormData((prev) => ({ ...prev, organization: e.target.value }))}
+            className="bg-white/5 border-white/10 text-white"
+            required
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm text-white/60 mb-2">Location</label>
+        <Input
+          value={formData.location}
+          onChange={(e) => setFormData((prev) => ({ ...prev, location: e.target.value }))}
+          className="bg-white/5 border-white/10 text-white"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm text-white/60 mb-2">Start Date</label>
+          <Input
+            type="date"
+            value={formData.start_date}
+            onChange={(e) => setFormData((prev) => ({ ...prev, start_date: e.target.value }))}
+            className="bg-white/5 border-white/10 text-white"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-sm text-white/60 mb-2">End Date</label>
+          <Input
+            type="date"
+            value={formData.end_date}
+            onChange={(e) => setFormData((prev) => ({ ...prev, end_date: e.target.value }))}
+            className="bg-white/5 border-white/10 text-white"
+            disabled={formData.current}
+          />
+        </div>
+      </div>
+
+      <label className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={formData.current}
+          onChange={(e) => setFormData((prev) => ({ ...prev, current: e.target.checked }))}
+          className="w-4 h-4 rounded border-white/20 bg-white/5"
+        />
+        <span className="text-sm text-white/60">Current role</span>
+      </label>
+
+      <div>
+        <label className="block text-sm text-white/60 mb-2">Description</label>
+        <textarea
+          value={formData.description}
+          onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
+          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white min-h-[80px]"
+          required
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm text-white/60 mb-2">Highlights (one per line)</label>
+        <textarea
+          value={formData.highlights}
+          onChange={(e) => setFormData((prev) => ({ ...prev, highlights: e.target.value }))}
+          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-md text-white min-h-[80px]"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm text-white/60 mb-2">Order</label>
+        <Input
+          type="number"
+          min="0"
+          value={formData.order}
+          onChange={(e) => setFormData((prev) => ({ ...prev, order: e.target.value }))}
+          className="bg-white/5 border-white/10 text-white"
+        />
+      </div>
+
+      <div className="flex justify-end gap-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          Cancel
+        </Button>
+        <Button className="bg-electric hover:bg-electric-dark" disabled={saving}>
+          {saving ? 'Saving...' : 'Save Experience'}
+        </Button>
+      </div>
+    </form>
   );
 };
 

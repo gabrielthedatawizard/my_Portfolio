@@ -13,6 +13,7 @@ import Preloader from './components/Preloader';
 import SettingsPanel from './components/SettingsPanel';
 import ServiceCards from './components/ServiceCards';
 import SplitPhotoGallery from './components/SplitPhotoGallery';
+import CV from './pages/CV';
 
 // Public Sections
 import Hero from './sections/Hero';
@@ -26,7 +27,8 @@ import Contact from './sections/Contact';
 // Context
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AnimationProvider, useAnimation } from './context/AnimationContext';
-import { ThemeProvider } from './context/ThemeContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
+import { useVisitorTracking } from './hooks/useVisitorTracking';
 
 import './App.css';
 
@@ -56,6 +58,9 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 // Public Layout with Preloader
 const PublicLayout = () => {
   const { isLoading } = useAnimation();
+  const { resolvedTheme } = useTheme();
+  const isLightTheme = resolvedTheme === 'light';
+  useVisitorTracking();
 
   return (
     <>
@@ -89,9 +94,9 @@ const PublicLayout = () => {
           position="bottom-right"
           toastOptions={{
             style: {
-              background: '#141414',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: '#fff',
+              background: isLightTheme ? '#ffffff' : '#141414',
+              border: isLightTheme ? '1px solid rgba(15,23,42,0.12)' : '1px solid rgba(255,255,255,0.1)',
+              color: isLightTheme ? '#0f172a' : '#fff',
             },
           }}
         />
@@ -106,6 +111,7 @@ const AppRouter = () => {
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<PublicLayout />} />
+      <Route path="/cv" element={<CV />} />
 
       {/* Admin Routes */}
       <Route path="/admin" element={<AdminLogin />} />
