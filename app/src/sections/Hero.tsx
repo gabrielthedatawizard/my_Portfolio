@@ -245,9 +245,9 @@ const Hero: React.FC = () => {
                 </Button>
               </motion.div>
 
-              <motion.div variants={itemVariants} className="mt-10 grid grid-cols-3 gap-3 sm:gap-4">
+                <motion.div variants={itemVariants} className="mt-10 grid grid-cols-3 gap-3 sm:gap-4">
                 {[
-                  { value: '5+', label: 'Years Experience' },
+                  { value: '3+', label: 'Years Experience' },
                   { value: '20+', label: 'Projects' },
                   { value: '15+', label: 'Certifications' },
                 ].map((stat) => (

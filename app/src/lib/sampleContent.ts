@@ -188,12 +188,21 @@ export const sampleExperience: Array<Omit<Experience, 'id' | 'created_at' | 'upd
 
 export const sampleEducation: Array<Omit<Education, 'id' | 'created_at' | 'updated_at'>> = [
   {
+    school: 'University of Dodoma',
+    program: 'University Education',
+    degree: 'Bachelor of Science in Health Information Science',
+    start_date: '2023-01-01',
+    end_date: '2026-12-31',
+    current: false,
+    order: 0,
+  },
+  {
     school: 'Ilboru High School',
     program: 'Advanced Level',
     start_date: '2021-01-01',
     end_date: '2023-12-31',
     current: false,
-    order: 0,
+    order: 1,
   },
   {
     school: "St Joseph Boys' Science School",
@@ -201,7 +210,7 @@ export const sampleEducation: Array<Omit<Education, 'id' | 'created_at' | 'updat
     start_date: '2017-01-01',
     end_date: '2020-12-31',
     current: false,
-    order: 1,
+    order: 2,
   },
 ];
 

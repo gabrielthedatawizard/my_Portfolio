@@ -56,13 +56,23 @@ const sampleExperienceItems: ExperienceItem[] = [
 
 const sampleEducationItems: EducationItem[] = [
   {
+    id: '3',
+    school: 'University of Dodoma',
+    program: 'University Education',
+    degree: 'Bachelor of Science in Health Information Science',
+    start_date: '2023-01-01',
+    end_date: '2026-12-31',
+    current: false,
+    order: 0,
+  },
+  {
     id: '1',
     school: 'Ilboru High School',
     program: 'Advanced Level',
     start_date: '2021-01-01',
     end_date: '2023-12-31',
     current: false,
-    order: 0,
+    order: 1,
   },
   {
     id: '2',
@@ -71,7 +81,7 @@ const sampleEducationItems: EducationItem[] = [
     start_date: '2017-01-01',
     end_date: '2020-12-31',
     current: false,
-    order: 1,
+    order: 2,
   },
 ];
 

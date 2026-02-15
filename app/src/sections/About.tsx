@@ -264,7 +264,7 @@ const About: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.8 }}
             >
               {[
-                { value: 5, suffix: '+', label: 'Years Experience' },
+                { value: 3, suffix: '+', label: 'Years Experience' },
                 { value: 20, suffix: '+', label: 'Projects Completed' },
                 { value: 15, suffix: '+', label: 'Certifications' },
                 { value: 50, suffix: '+', label: 'Skills Mastered' },
