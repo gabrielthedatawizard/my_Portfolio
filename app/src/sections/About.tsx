@@ -264,10 +264,10 @@ const About: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.8 }}
             >
               {[
-                { value: 3, suffix: '+', label: 'Years Experience' },
-                { value: 20, suffix: '+', label: 'Projects Completed' },
-                { value: 15, suffix: '+', label: 'Certifications' },
-                { value: 50, suffix: '+', label: 'Skills Mastered' },
+                { value: 2, suffix: '+', label: 'Years Experience' },
+                { value: 10, suffix: '+', label: 'Projects Completed' },
+                { value: 10, suffix: '+', label: 'Certifications' },
+                { value: 30, suffix: '+', label: 'Skills Mastered' },
               ].map((stat, index) => (
                 <motion.div 
                   key={index}
