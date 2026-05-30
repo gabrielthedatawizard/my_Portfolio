@@ -1,4 +1,4 @@
-﻿import { Linkedin, Instagram, MessageCircle, ArrowUp } from 'lucide-react';
+﻿import { Linkedin, Instagram, MessageCircle, Github, ArrowUp } from 'lucide-react';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 
@@ -10,6 +10,7 @@ const Footer: React.FC = () => {
   const socialLinks = [
     { icon: Linkedin, href: 'https://www.linkedin.com/in/gabriel-myeye-361487307/', label: 'LinkedIn' },
     { icon: Instagram, href: 'https://www.instagram.com/meulic/', label: 'Instagram' },
+    { icon: Github, href: 'https://github.com/gabrielthedatawizard', label: 'GitHub' },
     { icon: MessageCircle, href: 'https://wa.me/255765578690', label: 'WhatsApp' },
   ];
 

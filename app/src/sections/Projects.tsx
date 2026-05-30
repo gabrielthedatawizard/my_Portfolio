@@ -31,7 +31,7 @@ const sampleProjects: Project[] = [
     start_date: '2023-01-01',
     end_date: '2023-06-30',
     project_url: 'https://example.com',
-    github_url: 'https://github.com',
+    github_url: 'https://github.com/gabrielthedatawizard',
     status: 'published',
   },
   {
@@ -49,7 +49,7 @@ const sampleProjects: Project[] = [
     start_date: '2023-03-01',
     end_date: '2023-08-31',
     project_url: 'https://example.com',
-    github_url: 'https://github.com',
+    github_url: 'https://github.com/gabrielthedatawizard',
     status: 'published',
   },
   {
@@ -67,7 +67,7 @@ const sampleProjects: Project[] = [
     start_date: '2023-06-01',
     end_date: '2023-09-30',
     project_url: 'https://example.com',
-    github_url: 'https://github.com',
+    github_url: 'https://github.com/gabrielthedatawizard',
     status: 'published',
   },
   {
@@ -85,7 +85,7 @@ const sampleProjects: Project[] = [
     start_date: '2023-09-01',
     end_date: '2023-12-31',
     project_url: 'https://example.com',
-    github_url: 'https://github.com',
+    github_url: 'https://github.com/gabrielthedatawizard',
     status: 'published',
   },
 ];
