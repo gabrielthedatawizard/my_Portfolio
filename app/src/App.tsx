@@ -1,10 +1,13 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { motion } from 'framer-motion';
 
-// Admin Components
-import AdminLogin from './admin/AdminLogin';
-import AdminDashboard from './admin/AdminDashboard';
+// Heavy routes are code-split so public visitors never download them.
+// AdminLogin / AdminDashboard pull the whole admin CMS; CV pulls print libs.
+const AdminLogin = lazy(() => import('./admin/AdminLogin'));
+const AdminDashboard = lazy(() => import('./admin/AdminDashboard'));
+const CV = lazy(() => import('./pages/CV'));
 
 // Public Components
 import Navigation from './components/Navigation';
@@ -13,8 +16,6 @@ import Preloader from './components/Preloader';
 import SettingsPanel from './components/SettingsPanel';
 import ServiceCards from './components/ServiceCards';
 import SplitPhotoGallery from './components/SplitPhotoGallery';
-import CV from './pages/CV';
-
 // Public Sections
 import Hero from './sections/Hero';
 import About from './sections/About';
@@ -110,20 +111,30 @@ const PublicLayout = () => {
 };
 
 // App Router
+const RouteFallback = (
+  <div className="min-h-screen bg-charcoal flex items-center justify-center">
+    <motion.div
+      className="w-8 h-8 border-2 border-electric/30 border-t-electric rounded-full"
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+    />
+  </div>
+);
+
 const AppRouter = () => {
   return (
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<PublicLayout />} />
-      <Route path="/cv" element={<CV />} />
+      <Route path="/cv" element={<Suspense fallback={RouteFallback}><CV /></Suspense>} />
 
       {/* Admin Routes */}
-      <Route path="/admin" element={<AdminLogin />} />
+      <Route path="/admin" element={<Suspense fallback={RouteFallback}><AdminLogin /></Suspense>} />
       <Route
         path="/admin/dashboard"
         element={
           <ProtectedRoute>
-            <AdminDashboard />
+            <Suspense fallback={RouteFallback}><AdminDashboard /></Suspense>
           </ProtectedRoute>
         }
       />

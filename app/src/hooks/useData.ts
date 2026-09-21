@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import {
+  readQueryCache,
+  writeQueryCache,
+  getInflightQuery,
+  setInflightQuery,
+  clearInflightQuery,
+  invalidateTableCache,
+} from '../lib/queryCache';
 import type {
   Profile,
   Project,
@@ -32,11 +40,22 @@ const useFetch = <T>(
   const [error, setError] = useState<Error | null>(null);
   const optionsKey = JSON.stringify(options ?? {});
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (force = false) => {
     const parsedOptions = JSON.parse(optionsKey) as FetchOptions;
+    const cacheKey = `${table}|${optionsKey}`;
 
-    try {
-      setLoading(true);
+    // Serve fresh cache instantly (repeat views, tab switches)
+    if (!force) {
+      const cached = readQueryCache(cacheKey);
+      if (cached !== null) {
+        setData(cached as T[]);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+    }
+
+    const runQuery = async (): Promise<T[]> => {
       let query = supabase.from(table).select(parsedOptions.select || '*');
 
       if (parsedOptions.filters) {
@@ -58,7 +77,28 @@ const useFetch = <T>(
       const { data: result, error: supabaseError } = await query;
 
       if (supabaseError) throw supabaseError;
-      setData(result as T[]);
+      return result as T[];
+    };
+
+    try {
+      setLoading(true);
+      let result: T[];
+      const ongoing = !force ? getInflightQuery<T>(cacheKey) : null;
+      if (ongoing) {
+        // An identical request is already in flight — share it
+        result = await ongoing;
+      } else {
+        const promise = runQuery();
+        setInflightQuery(cacheKey, promise as Promise<unknown[]>);
+        try {
+          result = await promise;
+        } finally {
+          clearInflightQuery(cacheKey);
+        }
+        writeQueryCache(cacheKey, result as unknown[]);
+      }
+      setData(result);
+      setError(null);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Unknown error'));
     } finally {
@@ -83,7 +123,8 @@ const useFetch = <T>(
         'postgres_changes',
         { event: '*', schema: 'public', table },
         () => {
-          void fetchData();
+          invalidateTableCache(table);
+          void fetchData(true);
         }
       )
       .subscribe();
@@ -93,7 +134,7 @@ const useFetch = <T>(
     };
   }, [fetchData, optionsKey, table]);
 
-  return { data, loading, error, refetch: fetchData };
+  return { data, loading, error, refetch: () => fetchData(true) };
 };
 
 // Profile hook

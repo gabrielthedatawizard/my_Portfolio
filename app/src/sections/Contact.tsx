@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { motion, useInView } from 'framer-motion';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { trackContentView } from '@/lib/contentTracking';
 
 const Contact: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,6 +81,7 @@ const Contact: React.FC = () => {
       label: 'Email',
       value: CONTACT.email,
       href: `mailto:${CONTACT.email}`,
+      trackPath: '/contact/email-click',
     },
     {
       icon: WhatsAppIcon,
@@ -88,12 +90,14 @@ const Contact: React.FC = () => {
       href: CONTACT.whatsappLink,
       target: '_blank' as const,
       rel: 'noopener noreferrer',
+      trackPath: '/contact/whatsapp-click',
     },
     {
       icon: MapPin,
       label: 'Location',
       value: CONTACT.location,
       href: null,
+      trackPath: null as string | null,
     },
   ];
 
@@ -216,6 +220,7 @@ const Contact: React.FC = () => {
                           href={info.href} 
                           target={(info as { target?: string }).target}
                           rel={(info as { rel?: string }).rel}
+                          onClick={() => info.trackPath && trackContentView(info.trackPath)}
                           className="text-white hover:text-electric transition-colors"
                         >
                           {info.value}
@@ -245,6 +250,7 @@ const Contact: React.FC = () => {
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={() => trackContentView(`/contact/social/${social.label.toLowerCase()}`)}
                     className="p-4 bg-white/5 border border-white/10 rounded-xl hover:border-electric/50 hover:bg-electric/10 transition-all duration-300 group"
                     aria-label={social.label}
                     initial={{ opacity: 0, scale: 0.8 }}

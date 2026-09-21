@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
 
+const SHOW_DEMO_HINT = import.meta.env.DEV === true;
+
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const { signIn, user } = useAuth();
+  const { signIn, user, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -16,11 +18,22 @@ const AdminLogin = () => {
     password: '',
   });
 
-  // Redirect if already logged in
-  if (user) {
-    navigate('/admin/dashboard');
-    return null;
+  // Redirect if already logged in (effect, not during render)
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-charcoal flex items-center justify-center">
+        <span className="w-8 h-8 border-2 border-electric/30 border-t-electric rounded-full animate-spin" />
+      </div>
+    );
   }
+
+  if (user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +80,8 @@ const AdminLogin = () => {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                 <Input
-                  type="text"
+                  type="email"
+                  autoComplete="username"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="admin@example.com"
@@ -83,6 +97,7 @@ const AdminLogin = () => {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
                 <Input
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   placeholder="••••••••"
@@ -122,9 +137,10 @@ const AdminLogin = () => {
           </div>
         </div>
 
-        {/* Demo credentials */}
+        {/* Demo credentials — development builds only, never shown in production */}
+        {SHOW_DEMO_HINT && (
         <div className="mt-6 bg-electric/10 border border-electric/20 rounded-xl p-4">
-          <p className="text-sm text-electric font-medium mb-2">🚀 Demo Mode</p>
+          <p className="text-sm text-electric font-medium mb-2">Dev demo mode</p>
           <p className="text-sm text-white/60">
             Use these credentials to access the dashboard without Supabase:
           </p>
@@ -133,6 +149,7 @@ const AdminLogin = () => {
             Password: <strong>demo</strong>
           </div>
         </div>
+        )}
       </div>
     </div>
   );
