@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
+  BarChart3,
   FolderGit2,
   Award,
   FileText,
@@ -9,6 +10,7 @@ import {
   Briefcase,
   GraduationCap,
   Wrench,
+  Quote,
   MessageSquare,
   Settings,
   LogOut,
@@ -22,6 +24,7 @@ import { syncSampleContentToSupabase } from '@/lib/sampleContent';
 
 // Admin sections
 import DashboardHome from './sections/DashboardHome';
+import AnalyticsManager from './sections/AnalyticsManager';
 import ProjectsManager from './sections/ProjectsManager';
 import CertificatesManager from './sections/CertificatesManager';
 import PostsManager from './sections/PostsManager';
@@ -29,12 +32,14 @@ import GalleryManager from './sections/GalleryManager';
 import ExperienceManager from './sections/ExperienceManager';
 import EducationManager from './sections/EducationManager';
 import SkillsManager from './sections/SkillsManager';
+import TestimonialsManager from './sections/TestimonialsManager';
 import MessagesManager from './sections/MessagesManager';
 import SettingsManager from './sections/SettingsManager';
 import LinkedInImportManager from './sections/LinkedInImportManager';
 
 type AdminSection =
   | 'dashboard'
+  | 'analytics'
   | 'projects'
   | 'certificates'
   | 'posts'
@@ -42,12 +47,14 @@ type AdminSection =
   | 'experience'
   | 'education'
   | 'skills'
+  | 'testimonials'
   | 'messages'
   | 'settings'
   | 'linkedin-import';
 
 const menuItems: { id: AdminSection; label: string; icon: React.ElementType; highlight?: boolean }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'analytics', label: 'Visitors & Analytics', icon: BarChart3 },
   { id: 'projects', label: 'Projects', icon: FolderGit2 },
   { id: 'certificates', label: 'Certificates', icon: Award },
   { id: 'posts', label: 'Blog Posts', icon: FileText },
@@ -55,6 +62,7 @@ const menuItems: { id: AdminSection; label: string; icon: React.ElementType; hig
   { id: 'experience', label: 'Experience', icon: Briefcase },
   { id: 'education', label: 'Education', icon: GraduationCap },
   { id: 'skills', label: 'Skills', icon: Wrench },
+  { id: 'testimonials', label: 'Testimonials', icon: Quote },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
   { id: 'linkedin-import', label: 'LinkedIn Import', icon: Linkedin, highlight: true },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -117,6 +125,8 @@ const AdminDashboard = () => {
             syncingSampleContent={syncingSampleContent}
           />
         );
+      case 'analytics':
+        return <AnalyticsManager />;
       case 'projects':
         return <ProjectsManager />;
       case 'certificates':
@@ -131,6 +141,8 @@ const AdminDashboard = () => {
         return <EducationManager />;
       case 'skills':
         return <SkillsManager />;
+      case 'testimonials':
+        return <TestimonialsManager />;
       case 'messages':
         return <MessagesManager />;
       case 'settings':
