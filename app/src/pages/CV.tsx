@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { Download, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProjects, useCertificates } from '@/hooks/useData';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { trackContentView } from '@/lib/contentTracking';
 import { sampleProjects, sampleCertificates } from '@/lib/sampleContent';
 import type { Project, Certificate } from '@/types';
 
@@ -61,10 +62,27 @@ const CV: React.FC = () => {
 
   const topCertificates = useMemo(() => certificates.filter(Boolean).slice(0, 6), [certificates]);
 
+  // Hiring-intent tracking: this page renders outside PublicLayout so the
+  // global visitor tracker never fires here — log the view explicitly, and
+  // log `/cv/download` whenever the print/PDF flow is triggered (once per mount).
+  const downloadTracked = useRef(false);
+  const trackDownload = () => {
+    if (downloadTracked.current) return;
+    downloadTracked.current = true;
+    trackContentView('/cv/download');
+  };
+
+  useEffect(() => {
+    trackContentView('/cv');
+  }, []);
+
   useEffect(() => {
     const shouldDownload = searchParams.get('download') === '1';
     if (!shouldDownload) return;
-    const id = window.setTimeout(() => window.print(), 250);
+    const id = window.setTimeout(() => {
+      trackDownload();
+      window.print();
+    }, 250);
     return () => window.clearTimeout(id);
   }, [searchParams]);
 
@@ -79,7 +97,10 @@ const CV: React.FC = () => {
             </Link>
           </Button>
           <Button
-            onClick={() => window.print()}
+            onClick={() => {
+              trackDownload();
+              window.print();
+            }}
             className="rounded-full bg-[#2563eb] text-white hover:bg-[#1d4ed8] focus-visible:ring-2 focus-visible:ring-[#2563eb] focus-visible:ring-offset-2"
             aria-label="Download CV as PDF (opens print dialog)"
           >

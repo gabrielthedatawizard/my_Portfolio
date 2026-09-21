@@ -97,6 +97,7 @@ const AnalyticsManager = () => {
     browsers,
     devices,
     insights,
+    funnel,
   } = useAnalytics(rangeDays);
   const { data: allProjects } = useProjects();
   const { data: allPosts } = usePosts();
@@ -398,6 +399,40 @@ const AnalyticsManager = () => {
               </CardContent>
             </Card>
           </div>
+
+          <Card className="bg-charcoal-light border-white/5 text-white">
+            <CardHeader>
+              <CardTitle className="text-white">Hiring funnel · last {rangeDays}d</CardTitle>
+              <CardDescription className="text-white/40">
+                Unique visitors → CV views → CV downloads → messages. Downloads are logged when the print/PDF flow fires on the CV page.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { icon: Users, label: 'Unique visitors', value: funnel.visitors, rate: null as string | null },
+                  { icon: Eye, label: 'Viewed CV', value: funnel.cvViews, rate: `${funnel.cvViewRate}% of visitors` },
+                  { icon: Download, label: 'Downloaded CV', value: funnel.cvDownloads, rate: `${funnel.downloadRate}% of CV views` },
+                  { icon: MailCheck, label: 'Sent a message', value: funnel.messages, rate: `${funnel.messageRate}% of visitors` },
+                ].map((step, i) => (
+                  <div key={step.label} className="relative p-4 bg-white/[0.02] border border-white/5 rounded-lg">
+                    {i > 0 && (
+                      <span className="hidden md:block absolute -left-3 top-1/2 -translate-y-1/2 text-electric font-bold">→</span>
+                    )}
+                    <step.icon className="h-5 w-5 text-electric mb-2" />
+                    <p className="text-2xl font-bold text-white">{loading ? '—' : step.value}</p>
+                    <p className="text-xs text-white/60">{step.label}</p>
+                    {step.rate && <p className="text-[11px] text-electric/80 mt-1">{step.rate}</p>}
+                  </div>
+                ))}
+              </div>
+              {!loading && funnel.visitors > 10 && funnel.cvViews === 0 && (
+                <p className="text-xs text-amber-400/90 mt-3">
+                  Visitors but zero CV views — make the Hero "Download CV" button more prominent; it's your strongest hiring signal.
+                </p>
+              )}
+            </CardContent>
+          </Card>
 
           <Card className="bg-charcoal-light border-white/5 text-white">
             <CardHeader>

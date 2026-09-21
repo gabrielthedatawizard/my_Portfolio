@@ -3,13 +3,20 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 const SESSION_STORAGE_KEY = 'portfolio_session_id';
 
 /**
- * Reuses the visitor session id created by `useVisitorTracking` so content
- * views (project case-study opens, insight reads) attribute to the same
- * session. Returns '' when no session exists yet (tracking not initialized).
+ * Gets the portfolio session id, creating one if needed (same key and format
+ * as `useVisitorTracking`). Creating here covers entry points that render
+ * outside `PublicLayout` — e.g. the standalone `/cv` page.
  */
 export const getPortfolioSessionId = (): string => {
   if (typeof window === 'undefined') return '';
-  return localStorage.getItem(SESSION_STORAGE_KEY) ?? '';
+  const existing = localStorage.getItem(SESSION_STORAGE_KEY);
+  if (existing) return existing;
+  const generated =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  localStorage.setItem(SESSION_STORAGE_KEY, generated);
+  return generated;
 };
 
 /**

@@ -278,9 +278,12 @@ const DashboardHome = ({
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-white/60">CV page</p>
+                <p className="text-sm text-white/60">CV views · 30d</p>
                 <p className="text-xl font-bold text-white font-mono">
-                  {analytics.topPages.find((p) => p.name === '/cv')?.views ?? 0}
+                  {analytics.funnel.cvViews}
+                </p>
+                <p className="text-[11px] text-electric/80 font-mono">
+                  {analytics.funnel.cvDownloads} downloads
                 </p>
               </div>
             </div>

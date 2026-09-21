@@ -306,6 +306,26 @@ export const useAnalytics = (rangeDays = 30) => {
         rangeUniques > 0 ? Math.round((messageCount / Math.max(rangeUniques, 1)) * 1000) / 10 : 0,
     };
 
+    // Hiring funnel (in range): unique visitors -> CV views -> CV downloads -> messages.
+    // CV events come from virtual paths logged by the standalone /cv page.
+    const cvSessions = new Set(
+      inRange.filter((v) => v.path === '/cv').map((v) => v.session_id)
+    );
+    const downloadSessions = new Set(
+      inRange.filter((v) => v.path === '/cv/download').map((v) => v.session_id)
+    );
+    const pct = (num: number, den: number) =>
+      den > 0 ? Math.round((num / den) * 1000) / 10 : 0;
+    const funnel = {
+      visitors: rangeUniques,
+      cvViews: cvSessions.size,
+      cvDownloads: downloadSessions.size,
+      messages: messageCount,
+      cvViewRate: pct(cvSessions.size, rangeUniques),
+      downloadRate: pct(downloadSessions.size, cvSessions.size),
+      messageRate: pct(messageCount, rangeUniques),
+    };
+
     // Actionable insights tailored to a health-data portfolio
     const insights: string[] = [];
     const mobileShare = devices.find((d) => d.name === 'Mobile')?.share ?? 0;
@@ -344,7 +364,7 @@ export const useAnalytics = (rangeDays = 30) => {
       );
     }
 
-    return { summary, daily, topPages, topReferrers, browsers, devices, insights };
+    return { summary, daily, topPages, topReferrers, browsers, devices, insights, funnel };
   }, [visitors, messageCount, rangeDays]);
 
   return {
