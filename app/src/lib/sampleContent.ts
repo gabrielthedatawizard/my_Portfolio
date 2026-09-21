@@ -20,28 +20,30 @@ export const sampleProjects: Array<Omit<Project, 'id' | 'created_at' | 'updated_
     featured: true,
     start_date: '2023-01-01',
     end_date: '2023-06-30',
-    project_url: 'https://example.com',
+    project_url: 'https://health-data-analytics-ai.vercel.app',
     github_url: 'https://github.com/gabrielthedatawizard',
     status: 'published',
   },
   {
-    title: 'Predictive Disease Modeling',
-    slug: 'predictive-disease-modeling',
-    summary: 'Machine learning models to predict disease outbreaks and patient readmission risks.',
+    title: 'TRIP — Tanzania Readmission Intelligence Platform',
+    slug: 'trip-readmission-intelligence',
+    summary:
+      'AI-powered platform that predicts 30-day hospital readmission risk, helping Tanzanian hospitals intervene early and improve patient outcomes.',
     content:
-      'Developed and deployed machine learning models that analyze historical health data to predict disease outbreaks and identify patients at high risk of readmission.',
-    problem: 'Hospitals needed better tools to predict patient outcomes and allocate resources effectively.',
+      "TRIP (Tanzania Readmission Intelligence Platform) is an AI-powered readmission prevention system for Tanzania's health system. It uses predictive analytics to identify patients at risk of 30-day hospital readmission, with interactive dashboards, patient-level risk views and exportable PDF reports for clinical and administrative teams. The platform was selected for presentation at the 3rd UDOM Scientific Conference on Health (USCHe 2026).",
+    problem:
+      'Hospitals struggle to tell which discharged patients will bounce back within 30 days, driving preventable readmissions, crowded wards and wasted resources.',
     approach:
-      'We used ensemble learning methods combining random forests, gradient boosting, and neural networks. Feature engineering focused on temporal patterns and demographic factors.',
-    tools: ['Python', 'Scikit-learn', 'Pandas', 'Jupyter', 'Docker'],
-    tags: ['Machine Learning', 'Predictive Analytics', 'Python'],
+      'Built an AI-driven risk-stratification workflow with interactive dashboards, patient-level risk views and one-click PDF exports so clinicians and managers can act on the predictions.',
+    tools: ['React', 'Machine Learning', 'Data Visualization', 'PDF Reporting', 'Vercel'],
+    tags: ['Machine Learning', 'Predictive Analytics', 'Digital Health'],
     outcomes:
-      'Achieved 85% accuracy in readmission prediction, enabling early intervention programs that reduced readmissions by 30%.',
+      'Live platform deployed on Vercel and serving real users; selected for presentation at the 3rd UDOM Scientific Conference on Health (USCHe 2026).',
     featured: true,
-    start_date: '2023-03-01',
-    end_date: '2023-08-31',
-    project_url: 'https://example.com',
+    start_date: '2026-01-01',
+    project_url: 'https://patient-readmission-prediction-plat-red.vercel.app',
     github_url: 'https://github.com/gabrielthedatawizard',
+    cover_url: '/screenshots/trip-logo.png',
     status: 'published',
   },
   {

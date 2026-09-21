@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUpRight, ExternalLink, Github } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import {
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import type { Project } from '../types';
 import { useProjects } from '@/hooks/useData';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { trackContentView } from '@/lib/contentTracking';
 
 // Sample projects data
@@ -31,26 +31,26 @@ const sampleProjects: Project[] = [
     featured: true,
     start_date: '2023-01-01',
     end_date: '2023-06-30',
-    project_url: 'https://example.com',
+    project_url: 'https://health-data-analytics-ai.vercel.app',
     github_url: 'https://github.com/gabrielthedatawizard',
     status: 'published',
   },
   {
     id: '2',
-    title: 'Predictive Disease Modeling',
-    slug: 'predictive-disease-modeling',
-    summary: 'Machine learning models to predict disease outbreaks and patient readmission risks.',
-    content: 'Developed and deployed machine learning models that analyze historical health data to predict disease outbreaks and identify patients at high risk of readmission.',
-    problem: 'Hospitals needed better tools to predict patient outcomes and allocate resources effectively.',
-    approach: 'We used ensemble learning methods combining random forests, gradient boosting, and neural networks. Feature engineering focused on temporal patterns and demographic factors.',
-    tools: ['Python', 'Scikit-learn', 'Pandas', 'Jupyter', 'Docker'],
-    tags: ['Machine Learning', 'Predictive Analytics', 'Python'],
-    outcomes: 'Achieved 85% accuracy in readmission prediction, enabling early intervention programs that reduced readmissions by 30%.',
+    title: 'TRIP — Tanzania Readmission Intelligence Platform',
+    slug: 'trip-readmission-intelligence',
+    summary: 'AI-powered platform that predicts 30-day hospital readmission risk, helping Tanzanian hospitals intervene early and improve patient outcomes.',
+    content: "TRIP (Tanzania Readmission Intelligence Platform) is an AI-powered readmission prevention system for Tanzania's health system. It uses predictive analytics to identify patients at risk of 30-day hospital readmission, with interactive dashboards, patient-level risk views and exportable PDF reports for clinical and administrative teams. The platform was selected for presentation at the 3rd UDOM Scientific Conference on Health (USCHe 2026).",
+    problem: 'Hospitals struggle to tell which discharged patients will bounce back within 30 days, driving preventable readmissions, crowded wards and wasted resources.',
+    approach: 'Built an AI-driven risk-stratification workflow with interactive dashboards, patient-level risk views and one-click PDF exports so clinicians and managers can act on the predictions.',
+    tools: ['React', 'Machine Learning', 'Data Visualization', 'PDF Reporting', 'Vercel'],
+    tags: ['Machine Learning', 'Predictive Analytics', 'Digital Health'],
+    outcomes: 'Live platform deployed on Vercel and serving real users; selected for presentation at the 3rd UDOM Scientific Conference on Health (USCHe 2026).',
     featured: true,
-    start_date: '2023-03-01',
-    end_date: '2023-08-31',
-    project_url: 'https://example.com',
+    start_date: '2026-01-01',
+    project_url: 'https://patient-readmission-prediction-plat-red.vercel.app',
     github_url: 'https://github.com/gabrielthedatawizard',
+    cover_url: '/screenshots/trip-logo.png',
     status: 'published',
   },
   {
@@ -94,7 +94,9 @@ const sampleProjects: Project[] = [
 const defaultFilterTags = ['All', 'Data Analytics', 'Machine Learning', 'Database', 'Web Development', 'Healthcare'];
 
 // Project image component with hover effects
-const ProjectImage: React.FC<{ project: Project }> = ({ project }) => {
+// Shows the real cover photo when one is available (Supabase project_media
+// cover or the project's `cover_url`), otherwise the gradient placeholder.
+const ProjectImage: React.FC<{ project: Project; cover?: string }> = ({ project, cover }) => {
   const imageRef = useRef<HTMLDivElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
@@ -135,7 +137,19 @@ const ProjectImage: React.FC<{ project: Project }> = ({ project }) => {
         transition={{ duration: 0.3 }}
       />
 
-      {/* Project initial letter */}
+      {/* Real cover photo when available */}
+      {cover && (
+        <img
+          src={cover}
+          alt={`${project.title} screenshot`}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-500"
+          style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
+        />
+      )}
+
+      {/* Project initial letter (placeholder when no photo) */}
+      {!cover && (
       <div className="absolute inset-0 flex items-center justify-center">
         <motion.span 
           className="text-6xl font-bold text-white/10"
@@ -148,6 +162,7 @@ const ProjectImage: React.FC<{ project: Project }> = ({ project }) => {
           {project.title[0]}
         </motion.span>
       </div>
+      )}
 
       {/* Overlay on hover */}
       <motion.div 
@@ -190,6 +205,36 @@ const Projects: React.FC = () => {
   const { data: projectsData, loading } = useProjects({ status: 'published' });
   const useSampleData = !isSupabaseConfigured;
   const projects = useSampleData ? sampleProjects : projectsData;
+
+  // Cover photos uploaded via Admin → Projects are stored in `project_media`
+  // (order 0 = cover). Fetch them so the public cards show real screenshots.
+  const [covers, setCovers] = useState<Record<string, string>>({});
+  useEffect(() => {
+    if (useSampleData) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('project_media')
+          .select('project_id, image_url, order')
+          .order('order', { ascending: true });
+        if (cancelled) return;
+        const map: Record<string, string> = {};
+        ((data ?? []) as Array<{ project_id: string; image_url: string }>).forEach((entry) => {
+          if (!map[entry.project_id] && entry.image_url) map[entry.project_id] = entry.image_url;
+        });
+        setCovers(map);
+      } catch (error) {
+        console.error('Failed to load project covers:', error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [useSampleData]);
+
+  const coverFor = (project: Project): string | undefined =>
+    covers[project.id] ?? project.cover_url ?? undefined;
 
   const filterTags = useMemo(() => {
     if (useSampleData) return defaultFilterTags;
@@ -334,7 +379,7 @@ const Projects: React.FC = () => {
                 }}
               >
                 {/* Image with 3D hover effect */}
-                <ProjectImage project={project} />
+                <ProjectImage project={project} cover={coverFor(project)} />
 
                 {/* Content */}
                 <div className="p-6">
@@ -410,6 +455,13 @@ const Projects: React.FC = () => {
               >
                 {/* Header Image */}
                 <div className="aspect-video bg-gradient-to-br from-electric/20 to-purple-500/20 rounded-lg mb-6 flex items-center justify-center relative overflow-hidden">
+                  {coverFor(selectedProject) ? (
+                    <img
+                      src={coverFor(selectedProject)}
+                      alt={`${selectedProject.title} screenshot`}
+                      className="absolute inset-0 h-full w-full object-cover object-top"
+                    />
+                  ) : (
                   <motion.span 
                     className="text-8xl font-bold text-white/10"
                     initial={{ scale: 0.8, opacity: 0 }}
@@ -418,6 +470,7 @@ const Projects: React.FC = () => {
                   >
                     {selectedProject.title[0]}
                   </motion.span>
+                  )}
                   
                   {/* Animated background */}
                   <motion.div

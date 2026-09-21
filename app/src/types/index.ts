@@ -34,6 +34,8 @@ export interface Project {
   end_date?: string;
   project_url?: string;
   github_url?: string;
+  /** Cover photo: local public path (e.g. `/screenshots/trip.png`) or remote URL. */
+  cover_url?: string;
   status: 'draft' | 'published';
   created_at?: string;
   updated_at?: string;
