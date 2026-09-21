@@ -13,6 +13,7 @@ import { motion, AnimatePresence, useInView } from 'framer-motion';
 import type { Project } from '../types';
 import { useProjects } from '@/hooks/useData';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { trackContentView } from '@/lib/contentTracking';
 
 // Sample projects data
 const sampleProjects: Project[] = [
@@ -205,6 +206,11 @@ const Projects: React.FC = () => {
     ? projects
     : projects.filter((project) => project.tags.includes(activeFilter));
 
+  const handleOpenProject = (project: Project) => {
+    setSelectedProject(project);
+    trackContentView(`/projects/${project.slug}`);
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -320,7 +326,7 @@ const Projects: React.FC = () => {
               <motion.div
                 key={project.id}
                 variants={itemVariants}
-                onClick={() => setSelectedProject(project)}
+                onClick={() => handleOpenProject(project)}
                 whileHover={{ y: -8 }}
                 className="group relative bg-charcoal-light border border-white/5 rounded-2xl overflow-hidden cursor-pointer"
                 style={{

@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner';
 import type { Post } from '../../types';
 import { supabase } from '@/lib/supabase';
+import { useContentViewCounts } from '@/hooks/useAnalytics';
 
 type PostFormValues = {
   title: string;
@@ -56,6 +57,7 @@ const PostsManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const { postViews } = useContentViewCounts();
 
   const loadPosts = useCallback(async () => {
     try {
@@ -211,7 +213,18 @@ const PostsManager = () => {
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="font-semibold text-white mb-2">{post.title}</h3>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <h3 className="font-semibold text-white">{post.title}</h3>
+                    {(postViews[post.slug]?.views ?? 0) > 0 && (
+                      <span
+                        className="flex items-center gap-1 text-xs text-white/50"
+                        title={`${postViews[post.slug].uniques} unique readers opened this note`}
+                      >
+                        <Eye className="h-3.5 w-3.5 text-electric" />
+                        {postViews[post.slug].views} reads
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-white/60 mb-3">{post.excerpt}</p>
                   <div className="flex flex-wrap gap-2">
                     {(post.tags ?? []).map((tag, index) => (

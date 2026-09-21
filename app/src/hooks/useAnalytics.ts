@@ -515,3 +515,69 @@ export const useContentHealth = () => {
 
   return { counts, profile, items, score, loading, refetch };
 };
+
+// ---------------------------------------------------------------------------
+// useContentViewCounts — per-project / per-post views from virtual paths
+// (`/projects/:slug`, `/insights/:slug` recorded via trackContentView)
+// ---------------------------------------------------------------------------
+
+export interface ContentViewCount {
+  views: number;
+  uniques: number;
+}
+
+export const useContentViewCounts = () => {
+  const [projectViews, setProjectViews] = useState<Record<string, ContentViewCount>>({});
+  const [postViews, setPostViews] = useState<Record<string, ContentViewCount>>({});
+  const [loading, setLoading] = useState(true);
+
+  const refetch = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setProjectViews({});
+      setPostViews({});
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('visitors')
+        .select('session_id, path')
+        .limit(2000);
+      if (error) throw error;
+
+      const projects: Record<string, { views: number; sessions: Set<string> }> = {};
+      const posts: Record<string, { views: number; sessions: Set<string> }> = {};
+      ((data ?? []) as Array<{ session_id: string; path: string }>).forEach((row) => {
+        const match = row.path?.match(/^\/(projects|insights)\/([^/?#]+)/);
+        if (!match) return;
+        const [, kind, slug] = match;
+        const bucket = kind === 'projects' ? projects : posts;
+        const entry = bucket[slug] ?? { views: 0, sessions: new Set<string>() };
+        entry.views += 1;
+        entry.sessions.add(row.session_id);
+        bucket[slug] = entry;
+      });
+
+      const collapse = (bucket: Record<string, { views: number; sessions: Set<string> }>) =>
+        Object.fromEntries(
+          Object.entries(bucket).map(([slug, e]) => [
+            slug,
+            { views: e.views, uniques: e.sessions.size },
+          ])
+        );
+      setProjectViews(collapse(projects));
+      setPostViews(collapse(posts));
+    } catch (error) {
+      console.error('Failed to load content view counts:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refetch();
+  }, [refetch]);
+
+  return { projectViews, postViews, loading, refetch };
+};

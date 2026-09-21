@@ -22,6 +22,7 @@ import Projects from './sections/Projects';
 import Skills from './sections/Skills';
 import Certificates from './sections/Certificates';
 import Experience from './sections/Experience';
+import Research from './sections/Research';
 import Contact from './sections/Contact';
 
 // Context
@@ -86,6 +87,7 @@ const PublicLayout = () => {
           <Skills />
           <Certificates />
           <Experience />
+          <Research />
           <Contact />
         </main>
         <Footer />

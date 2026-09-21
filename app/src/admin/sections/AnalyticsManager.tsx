@@ -14,6 +14,8 @@ import {
   Compass,
   Lightbulb,
   CalendarDays,
+  FolderGit2,
+  FileText,
 } from 'lucide-react';
 import {
   AreaChart,
@@ -51,8 +53,10 @@ import {
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { useProjects, usePosts } from '@/hooks/useData';
 import {
   useAnalytics,
+  useContentViewCounts,
   cleanReferrer,
   parseBrowser,
   parseDevice,
@@ -94,6 +98,26 @@ const AnalyticsManager = () => {
     devices,
     insights,
   } = useAnalytics(rangeDays);
+  const { data: allProjects } = useProjects();
+  const { data: allPosts } = usePosts();
+  const { projectViews, postViews } = useContentViewCounts();
+
+  const contentLeaderboard = useMemo(() => {
+    const rows: Array<{ kind: 'Case study' | 'Insight'; title: string; slug: string; views: number; uniques: number }> = [];
+    allProjects.forEach((p) => {
+      const counts = projectViews[p.slug];
+      if (counts && counts.views > 0) {
+        rows.push({ kind: 'Case study', title: p.title, slug: p.slug, views: counts.views, uniques: counts.uniques });
+      }
+    });
+    allPosts.forEach((p) => {
+      const counts = postViews[p.slug];
+      if (counts && counts.views > 0) {
+        rows.push({ kind: 'Insight', title: p.title, slug: p.slug, views: counts.views, uniques: counts.uniques });
+      }
+    });
+    return rows.sort((a, b) => b.views - a.views).slice(0, 8);
+  }, [allProjects, allPosts, projectViews, postViews]);
 
   const pathOptions = useMemo(() => {
     const set = new Set(visitors.map((v) => v.path || '/'));
@@ -395,6 +419,55 @@ const AnalyticsManager = () => {
                     <Bar dataKey="views" fill="#2A6BFF" radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+              )}
+            </CardContent>
+          </Card>
+          <Card className="bg-charcoal-light border-white/5 text-white">
+            <CardHeader>
+              <CardTitle className="text-white">Content leaderboard</CardTitle>
+              <CardDescription className="text-white/40">
+                Which case studies and insights actually get opened — titles resolved from your content, not just paths. Promote winners, rewrite losers.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {contentLeaderboard.length === 0 ? (
+                <p className="text-white/40 text-sm">
+                  No case-study or insight opens tracked yet — open a project on the public site to seed the first row.
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableHead className="text-white/50">Content</TableHead>
+                      <TableHead className="text-white/50 text-right">Opens</TableHead>
+                      <TableHead className="text-white/50 text-right">Unique readers</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contentLeaderboard.map((row) => (
+                      <TableRow key={`${row.kind}-${row.slug}`} className="border-white/5">
+                        <TableCell>
+                          <div className="flex items-center gap-2 min-w-0">
+                            {row.kind === 'Case study' ? (
+                              <FolderGit2 className="h-4 w-4 text-electric shrink-0" />
+                            ) : (
+                              <FileText className="h-4 w-4 text-green-400 shrink-0" />
+                            )}
+                            <Badge variant="secondary" className="bg-white/5 text-white/50 border-0 shrink-0">
+                              {row.kind}
+                            </Badge>
+                            <span className="text-white/85 text-sm truncate">{row.title}</span>
+                          </div>
+                          <span className="text-xs text-white/30 font-mono">
+                            /{row.kind === 'Case study' ? 'projects' : 'insights'}/{row.slug}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right text-white font-semibold">{row.views}</TableCell>
+                        <TableCell className="text-right text-white/60">{row.uniques}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>

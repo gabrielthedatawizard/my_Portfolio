@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner';
 import type { Project } from '../../types';
 import { supabase } from '@/lib/supabase';
+import { useContentViewCounts } from '@/hooks/useAnalytics';
 
 type ProjectFormValues = {
   title: string;
@@ -87,6 +88,7 @@ const ProjectsManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const { projectViews } = useContentViewCounts();
 
   const loadProjects = useCallback(async () => {
     try {
@@ -385,6 +387,15 @@ const ProjectsManager = () => {
                   <Badge className="bg-electric/20 text-electric border-0 text-xs">
                     Featured
                   </Badge>
+                )}
+                {(projectViews[project.slug]?.views ?? 0) > 0 && (
+                  <span
+                    className="flex items-center gap-1 text-xs text-white/50"
+                    title={`${projectViews[project.slug].uniques} unique readers opened this case study`}
+                  >
+                    <Eye className="h-3.5 w-3.5 text-electric" />
+                    {projectViews[project.slug].views}
+                  </span>
                 )}
               </div>
             </div>
