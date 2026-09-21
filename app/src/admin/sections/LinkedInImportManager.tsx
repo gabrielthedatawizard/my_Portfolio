@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 import {
@@ -188,6 +189,8 @@ const LinkedInImportManager: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  // Typed confirmation required before replace mode can wipe tables.
+  const [replaceConfirm, setReplaceConfirm] = useState('');
   const [sections, setSections] = useState<SectionToggle>({
     certifications: true,
     skills: true,
@@ -289,71 +292,134 @@ const LinkedInImportManager: React.FC = () => {
 
   const handleImport = async () => {
     if (!parsed) return;
+    // Safety: replace mode wipes whole tables — require typed confirmation.
+    if (importMode === 'replace' && replaceConfirm.trim() !== 'DELETE') {
+      toast.error('Type DELETE to confirm replacing all existing records');
+      return;
+    }
     setStep('importing');
     const errors: string[] = [];
     let certificationsImported = 0;
     let skillsImported = 0;
     let experienceImported = 0;
     let educationImported = 0;
+    let certificationsSkipped = 0;
+    let skillsSkipped = 0;
+    let experienceSkipped = 0;
+    let educationSkipped = 0;
     let profileUpdated = false;
 
     try {
-      // Helper to upsert rows
-      const upsertBatch = async <T extends Record<string, unknown>>(
+      // Natural keys for merge-mode dedupe (LinkedIn rows get random ids, so
+      // `onConflict: 'id'` can never match — match on content instead).
+      type Row = Record<string, unknown>;
+      const str = (v: unknown) => String(v ?? '').toLowerCase().trim();
+      const naturalKey: Record<string, (r: Row) => string> = {
+        certificates: (r) => `${str(r.title)}|${str(r.issuer)}`,
+        skills: (r) => `${str(r.name)}|${str(r.category)}`,
+        experience: (r) => `${str(r.title)}|${str(r.organization)}|${str(r.start_date)}`,
+        education: (r) => `${str(r.school)}|${str(r.program)}|${str(r.start_date)}`,
+      };
+      const keyColumns: Record<string, string> = {
+        certificates: 'title,issuer',
+        skills: 'name,category',
+        experience: 'title,organization,start_date',
+        education: 'school,program,start_date',
+      };
+
+      // Import rows: replace wipes the table first; merge inserts only rows
+      // whose natural key doesn't already exist (within-batch dupes collapse too).
+      const importBatch = async (
         table: string,
-        rows: T[],
+        rows: Row[],
         mode: LinkedInImportMode
-      ): Promise<number> => {
-        if (rows.length === 0) return 0;
+      ): Promise<{ imported: number; skipped: number }> => {
+        if (rows.length === 0) return { imported: 0, skipped: 0 };
+        const clean = rows.map(({ _order: _o, ...rest }) => rest);
         if (mode === 'replace') {
-          // Delete all existing then insert
-          await supabase.from(table).delete().neq('id', 'impossible-id');
+          const { error: deleteError } = await supabase
+            .from(table)
+            .delete()
+            .neq('id', 'impossible-id');
+          if (deleteError) {
+            errors.push(`${table}: ${deleteError.message}`);
+            return { imported: 0, skipped: 0 };
+          }
+          const { error } = await supabase.from(table).insert(clean);
+          if (error) {
+            errors.push(`${table}: ${error.message}`);
+            return { imported: 0, skipped: 0 };
+          }
+          return { imported: clean.length, skipped: 0 };
         }
-        const { error } = await supabase.from(table).upsert(
-          rows.map(({ _order: _o, ...rest }) => rest) as T[],
-          { onConflict: 'id' }
-        );
-        if (error) {
-          errors.push(`${table}: ${error.message}`);
-          return 0;
+        const keyFn = naturalKey[table];
+        const { data: existing, error: fetchError } = await supabase
+          .from(table)
+          .select(keyColumns[table]);
+        if (fetchError) {
+          errors.push(`${table}: ${fetchError.message}`);
+          return { imported: 0, skipped: 0 };
         }
-        return rows.length;
+        const seen = new Set(((existing ?? []) as Row[]).map(keyFn));
+        const fresh = clean.filter((row) => {
+          const key = keyFn(row);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        const skipped = clean.length - fresh.length;
+        if (fresh.length > 0) {
+          const { error } = await supabase.from(table).insert(fresh);
+          if (error) {
+            errors.push(`${table}: ${error.message}`);
+            return { imported: 0, skipped };
+          }
+        }
+        return { imported: fresh.length, skipped };
       };
 
       // Certifications
       if (sections.certifications && parsed.certifications.length > 0) {
-        certificationsImported = await upsertBatch(
+        const result = await importBatch(
           'certificates',
-          parsed.certifications as unknown as Record<string, unknown>[],
+          parsed.certifications as unknown as Row[],
           importMode
         );
+        certificationsImported = result.imported;
+        certificationsSkipped = result.skipped;
       }
 
       // Skills
       if (sections.skills && parsed.skills.length > 0) {
-        skillsImported = await upsertBatch(
+        const result = await importBatch(
           'skills',
-          parsed.skills as unknown as Record<string, unknown>[],
+          parsed.skills as unknown as Row[],
           importMode
         );
+        skillsImported = result.imported;
+        skillsSkipped = result.skipped;
       }
 
       // Experience
       if (sections.experience && parsed.experience.length > 0) {
-        experienceImported = await upsertBatch(
+        const result = await importBatch(
           'experience',
-          parsed.experience as unknown as Record<string, unknown>[],
+          parsed.experience as unknown as Row[],
           importMode
         );
+        experienceImported = result.imported;
+        experienceSkipped = result.skipped;
       }
 
       // Education
       if (sections.education && parsed.education.length > 0) {
-        educationImported = await upsertBatch(
+        const result = await importBatch(
           'education',
-          parsed.education as unknown as Record<string, unknown>[],
+          parsed.education as unknown as Row[],
           importMode
         );
+        educationImported = result.imported;
+        educationSkipped = result.skipped;
       }
 
       // Profile (upsert into first profile row)
@@ -392,6 +458,10 @@ const LinkedInImportManager: React.FC = () => {
         educationImported,
         profileUpdated,
         errors,
+        certificationsSkipped,
+        skillsSkipped,
+        experienceSkipped,
+        educationSkipped,
       });
       setStep('done');
 
@@ -409,6 +479,10 @@ const LinkedInImportManager: React.FC = () => {
         educationImported,
         profileUpdated,
         errors,
+        certificationsSkipped,
+        skillsSkipped,
+        experienceSkipped,
+        educationSkipped,
       });
       setStep('done');
       toast.error('Import encountered errors');
@@ -420,6 +494,7 @@ const LinkedInImportManager: React.FC = () => {
     setParsed(null);
     setSummary(null);
     setUploadError(null);
+    setReplaceConfirm('');
     csvFilesRef.current = {};
   };
 
@@ -605,7 +680,10 @@ const LinkedInImportManager: React.FC = () => {
                 {(['merge', 'replace'] as LinkedInImportMode[]).map((mode) => (
                   <button
                     key={mode}
-                    onClick={() => setImportMode(mode)}
+                    onClick={() => {
+                      setImportMode(mode);
+                      if (mode !== 'replace') setReplaceConfirm('');
+                    }}
                     className={`p-4 rounded-xl border text-left transition-all duration-200 ${
                       importMode === mode
                         ? 'border-[#0077B5] bg-[#0077B5]/10'
@@ -778,6 +856,32 @@ const LinkedInImportManager: React.FC = () => {
               )}
             </div>
 
+            {/* Destructive-mode guard: replace wipes whole tables */}
+            {importMode === 'replace' && (
+              <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl space-y-3">
+                <p className="text-red-400 font-medium text-sm flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" /> Replace mode permanently deletes
+                </p>
+                <p className="text-red-300/70 text-xs">
+                  All existing records in the enabled sections will be deleted and replaced
+                  with this import. Your current portfolio content cannot be recovered
+                  afterwards. Prefer <strong>merge</strong> unless you are re-importing
+                  from scratch.
+                </p>
+                <div>
+                  <label className="block text-xs text-white/60 mb-1">
+                    Type <span className="font-mono font-bold text-red-300">DELETE</span> to enable the import button
+                  </label>
+                  <Input
+                    value={replaceConfirm}
+                    onChange={(e) => setReplaceConfirm(e.target.value)}
+                    placeholder="DELETE"
+                    className="max-w-xs bg-white/5 border-white/10 text-white placeholder:text-white/30"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between">
               <Button
                 variant="outline"
@@ -791,11 +895,12 @@ const LinkedInImportManager: React.FC = () => {
                 onClick={() => void handleImport()}
                 className="bg-[#0077B5] hover:bg-[#006097] text-white gap-2"
                 disabled={
-                  !sections.certifications &&
-                  !sections.skills &&
-                  !sections.experience &&
-                  !sections.education &&
-                  !sections.profile
+                  (!sections.certifications &&
+                    !sections.skills &&
+                    !sections.experience &&
+                    !sections.education &&
+                    !sections.profile) ||
+                  (importMode === 'replace' && replaceConfirm.trim() !== 'DELETE')
                 }
               >
                 <Upload className="h-4 w-4" />
@@ -856,17 +961,18 @@ const LinkedInImportManager: React.FC = () => {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {[
-                  { label: 'Certifications', count: summary.certificationsImported, icon: Award },
-                  { label: 'Skills', count: summary.skillsImported, icon: Zap },
-                  { label: 'Experience', count: summary.experienceImported, icon: Briefcase },
-                  { label: 'Education', count: summary.educationImported, icon: GraduationCap },
+                  { label: 'Certifications', count: summary.certificationsImported, skipped: summary.certificationsSkipped ?? 0, icon: Award },
+                  { label: 'Skills', count: summary.skillsImported, skipped: summary.skillsSkipped ?? 0, icon: Zap },
+                  { label: 'Experience', count: summary.experienceImported, skipped: summary.experienceSkipped ?? 0, icon: Briefcase },
+                  { label: 'Education', count: summary.educationImported, skipped: summary.educationSkipped ?? 0, icon: GraduationCap },
                   {
                     label: 'Profile',
                     count: summary.profileUpdated ? 1 : 0,
+                    skipped: 0,
                     icon: User,
                     custom: summary.profileUpdated ? 'Updated' : 'Skipped',
                   },
-                ].map(({ label, count, icon: Icon, custom }) => (
+                ].map(({ label, count, skipped, icon: Icon, custom }) => (
                   <div key={label} className="bg-white/5 rounded-xl p-3 flex items-center gap-3">
                     <div className="p-2 rounded-lg bg-[#0077B5]/10">
                       <Icon className="h-4 w-4 text-[#0077B5]" />
@@ -874,6 +980,9 @@ const LinkedInImportManager: React.FC = () => {
                     <div>
                       <p className="text-xs text-white/50">{label}</p>
                       <p className="text-white font-semibold">{custom ?? `${count} imported`}</p>
+                      {!custom && skipped > 0 && (
+                        <p className="text-white/40 text-xs">{skipped} already in portfolio</p>
+                      )}
                     </div>
                   </div>
                 ))}

@@ -57,6 +57,32 @@ Deno.serve(async (req: Request) => {
     const error = url.searchParams.get('error');
     const errorDescription = url.searchParams.get('error_description');
 
+    // The state is `<random>.<b64url(siteOrigin)>` (see useLinkedInSync).
+    // Post back to exactly that origin — never '*' — so the auth code can't
+    // leak to an unexpected recipient.
+    let targetOrigin = '';
+    const rawState = state ?? '';
+    const dotIdx = rawState.indexOf('.');
+    if (dotIdx > 0) {
+      try {
+        const b64 = rawState.slice(dotIdx + 1).replace(/-/g, '+').replace(/_/g, '/');
+        const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+        const origin = atob(padded);
+        if (/^https:\/\/[^/]+$/.test(origin) || /^http:\/\/localhost(:\d+)?$/.test(origin)) {
+          targetOrigin = origin;
+        }
+      } catch {
+        targetOrigin = '';
+      }
+    }
+
+    if (!targetOrigin) {
+      return new Response('Invalid OAuth state. Please close this window and try again.', {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'text/plain' },
+      });
+    }
+
     const html = `<!DOCTYPE html>
 <html>
 <head><title>LinkedIn Authorization</title></head>
@@ -70,7 +96,7 @@ Deno.serve(async (req: Request) => {
         state: ${JSON.stringify(state)},
         error: ${JSON.stringify(error ?? errorDescription ?? null)},
       },
-      window.location.origin
+      ${JSON.stringify(targetOrigin)}
     );
     window.close();
   } else {
@@ -110,6 +136,27 @@ Deno.serve(async (req: Request) => {
         return new Response(
           JSON.stringify({ error: 'Server configuration missing. Check Edge Function secrets.' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+
+      // Verify the caller's Supabase JWT — without this, anyone on the
+      // internet could exchange stolen auth codes and write to `profiles`.
+      // (The admin dashboard requires login, so legit calls always carry one.)
+      const authHeader = req.headers.get('authorization') ?? '';
+      const jwt = authHeader.replace(/^Bearer\s+/i, '').trim();
+      if (!jwt) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized. Sign in to the admin dashboard first.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwt);
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Unauthorized. Invalid or expired session.' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
@@ -173,8 +220,6 @@ Deno.serve(async (req: Request) => {
       };
 
       // Step 3: Upsert profile into Supabase
-      const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-
       const { data: existingProfile } = await supabaseAdmin
         .from('profiles')
         .select('id')

@@ -235,6 +235,11 @@ export interface LinkedInImportSummary {
   educationImported: number;
   profileUpdated: boolean;
   errors: string[];
+  /** Records skipped in merge mode because a matching record already exists. */
+  certificationsSkipped?: number;
+  skillsSkipped?: number;
+  experienceSkipped?: number;
+  educationSkipped?: number;
 }
 
 export type LinkedInSyncStatus = 'idle' | 'connecting' | 'syncing' | 'success' | 'error';

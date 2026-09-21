@@ -37,6 +37,11 @@ function generateState(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
 }
 
+// URL-safe base64 (no +/= chars that break query params)
+function encodeOrigin(origin: string): string {
+  return btoa(origin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
 export interface UseLinkedInSyncReturn {
   status: LinkedInSyncStatus;
   result: LinkedInSyncResult | null;
@@ -69,11 +74,18 @@ export function useLinkedInSync(): UseLinkedInSyncReturn {
     }
   }, []);
 
-  // Listen for messages from the OAuth popup
+  // Listen for messages from the OAuth popup.
+  // The popup runs on the Supabase functions origin (not the site origin),
+  // so we accept both — authenticity comes from the unguessable state token.
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
-      // Only accept messages from our own origin
-      if (event.origin !== window.location.origin) return;
+      let supabaseOrigin = '';
+      try {
+        supabaseOrigin = SUPABASE_URL ? new URL(SUPABASE_URL).origin : '';
+      } catch {
+        supabaseOrigin = '';
+      }
+      if (event.origin !== window.location.origin && event.origin !== supabaseOrigin) return;
 
       const { type, code, state, error: oauthError } = event.data as {
         type?: string;
@@ -95,7 +107,11 @@ export function useLinkedInSync(): UseLinkedInSyncReturn {
         return;
       }
 
-      if (!code || state !== stateRef.current) {
+      // State is `<random>.<b64url(siteOrigin)>` — compare only the random part.
+      const rawState = state ?? '';
+      const dotIdx = rawState.indexOf('.');
+      const receivedRandom = dotIdx === -1 ? rawState : rawState.slice(0, dotIdx);
+      if (!code || receivedRandom !== stateRef.current) {
         setError('Invalid OAuth response. Please try again.');
         setStatus('error');
         return;
@@ -157,10 +173,13 @@ export function useLinkedInSync(): UseLinkedInSyncReturn {
     const state = generateState();
     stateRef.current = state;
 
+    // Embed the site origin so the edge-function callback page (running on
+    // the Supabase origin) can post the result back to exactly this origin.
+    const compositeState = `${state}.${encodeOrigin(window.location.origin)}`;
     const authUrl = buildLinkedInAuthUrl(
       LINKEDIN_CLIENT_ID!,
       getRedirectUri(),
-      state
+      compositeState
     );
 
     // Open OAuth popup
