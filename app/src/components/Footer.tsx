@@ -1,4 +1,5 @@
-﻿import { Linkedin, Instagram, MessageCircle, Github, ArrowUp } from 'lucide-react';
+import { Linkedin, Instagram, Github, ArrowUp } from 'lucide-react';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
 
@@ -11,7 +12,7 @@ const Footer: React.FC = () => {
     { icon: Linkedin, href: 'https://www.linkedin.com/in/gabriel-myeye-361487307/', label: 'LinkedIn' },
     { icon: Instagram, href: 'https://www.instagram.com/meulic/', label: 'Instagram' },
     { icon: Github, href: 'https://github.com/gabrielthedatawizard', label: 'GitHub' },
-    { icon: MessageCircle, href: 'https://wa.me/255765578690', label: 'WhatsApp' },
+    { icon: WhatsAppIcon, href: 'https://wa.me/255765578690', label: 'WhatsApp' },
   ];
 
   const navLinks = [

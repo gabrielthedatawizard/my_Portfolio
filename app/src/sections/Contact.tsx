@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { Mail, MapPin, MessageCircle, Send, Linkedin, Instagram, Github } from 'lucide-react';
+import { Mail, MapPin, Send, Linkedin, Instagram, Github } from 'lucide-react';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -70,7 +71,7 @@ const Contact: React.FC = () => {
     { icon: Linkedin, href: CONTACT.linkedin, label: 'LinkedIn' },
     { icon: Instagram, href: CONTACT.instagram, label: 'Instagram' },
     { icon: Github, href: CONTACT.github, label: 'GitHub' },
-    { icon: MessageCircle, href: CONTACT.whatsappLink, label: 'WhatsApp' },
+    { icon: WhatsAppIcon, href: CONTACT.whatsappLink, label: 'WhatsApp' },
   ];
 
   const contactInfo = [
@@ -81,7 +82,7 @@ const Contact: React.FC = () => {
       href: `mailto:${CONTACT.email}`,
     },
     {
-      icon: MessageCircle,
+      icon: WhatsAppIcon,
       label: 'WhatsApp',
       value: `WhatsApp (${CONTACT.whatsappNumber})`,
       href: CONTACT.whatsappLink,
