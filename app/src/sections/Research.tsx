@@ -12,6 +12,8 @@ import {
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import type { Post } from '../types';
 import { usePosts } from '@/hooks/useData';
+import { isSupabaseConfigured } from '@/lib/supabase';
+import { samplePosts } from '@/lib/sampleContent';
 import { trackContentView } from '@/lib/contentTracking';
 
 const readingTime = (content: string): number => {
@@ -33,7 +35,13 @@ const Research: React.FC = () => {
   const [activeTag, setActiveTag] = useState('All');
   const sectionRef = useRef<HTMLElement>(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
-  const { data: posts, loading } = usePosts();
+  const { data: postsData, loading } = usePosts();
+  // Same pattern as Projects: live data when Supabase is connected,
+  // curated samples otherwise — the section is never an empty dead end.
+  const posts = useMemo<Post[]>(
+    () => (!isSupabaseConfigured ? (samplePosts as unknown as Post[]) : postsData),
+    [postsData]
+  );
 
   const tags = useMemo(() => {
     const set = new Set<string>();
@@ -48,9 +56,8 @@ const Research: React.FC = () => {
     trackContentView(`/insights/${post.slug}`);
   };
 
-  // No fake research: the section stays hidden until the owner publishes
-  // real notes via Admin → Blog Posts. Credibility matters in health.
-  if (!loading && posts.length === 0) return null;
+  // Samples guarantee content when Supabase is offline; with Supabase live
+  // but zero posts, the empty-state message below invites the owner to publish.
 
   return (
     <section ref={sectionRef} id="insights" className="relative py-24 md:py-32 bg-charcoal overflow-hidden">
@@ -127,7 +134,7 @@ const Research: React.FC = () => {
             >
               {filtered.map((post, index) => (
                 <motion.article
-                  key={post.id}
+                  key={post.slug || post.title}
                   onClick={() => handleOpenPost(post)}
                   initial={{ opacity: 0, y: 40 }}
                   animate={isInView ? { opacity: 1, y: 0 } : {}}

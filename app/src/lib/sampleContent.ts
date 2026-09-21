@@ -1,4 +1,4 @@
-import type { Certificate, Education, Experience, Project, Skill } from '@/types';
+import type { Certificate, Education, Experience, Post, Project, Skill } from '@/types';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 export const sampleProjects: Array<Omit<Project, 'id' | 'created_at' | 'updated_at'>> = [
@@ -64,7 +64,6 @@ export const sampleProjects: Array<Omit<Project, 'id' | 'created_at' | 'updated_
     featured: true,
     start_date: '2023-06-01',
     end_date: '2023-09-30',
-    project_url: 'https://example.com',
     github_url: 'https://github.com/gabrielthedatawizard',
     status: 'published',
   },
@@ -85,7 +84,6 @@ export const sampleProjects: Array<Omit<Project, 'id' | 'created_at' | 'updated_
     featured: false,
     start_date: '2023-09-01',
     end_date: '2023-12-31',
-    project_url: 'https://example.com',
     github_url: 'https://github.com/gabrielthedatawizard',
     status: 'published',
   },
@@ -143,8 +141,68 @@ export const sampleCertificates: Array<Omit<Certificate, 'id' | 'created_at' | '
   },
 ];
 
-export const sampleExperience: Array<Omit<Experience, 'id' | 'created_at' | 'updated_at'>> = [
+export const samplePosts: Array<Omit<Post, 'id' | 'created_at' | 'updated_at'>> = [
   {
+    title: '5 Data-Quality Checks I Run on Every DHIS2 Export',
+    slug: 'dhis2-data-quality-checks',
+    excerpt:
+      'Duplicate rows, silent blanks, shifted dates — the unglamorous checks that decide whether a dashboard tells the truth.',
+    content: `Every DHIS2 export I touch goes through the same five checks before it gets near a dashboard.
+
+1. Completeness: which facilities and periods are missing, and is the gap real or a late report?
+2. Duplicates: same facility, period and data element appearing twice after merged downloads.
+3. Blanks vs zeros: a blank cell is not a zero. Treating them the same has ruined more analyses than any model ever has.
+4. Date sanity: reporting periods that shifted by a month after an Excel re-open. Yes, really.
+5. Outlier sweep: values more than 3 standard deviations from a facility's own history get a phone call, not a delete key.
+
+None of this is fancy. All of it is the difference between a dashboard clinicians trust and one they quietly stop opening.`,
+    tags: ['DHIS2', 'Data Quality', 'Digital Health'],
+    published_at: '2026-06-15T00:00:00.000Z',
+    status: 'published',
+  },
+  {
+    title: 'What Presenting TRIP at USCHe 2026 Taught Me',
+    slug: 'trip-usche-2026-lessons',
+    excerpt:
+      "Clinicians don't ask about your model. They ask who acts on the prediction, and when.",
+    content: `Presenting the Tanzania Readmission Intelligence Platform (TRIP) at the 3rd UDOM Scientific Conference on Health was the most useful feedback session the project ever had.
+
+The questions from clinicians were never about algorithms. They were operational: which nurse sees the risk list, at what point in the discharge workflow, and what exactly is she supposed to do differently for a high-risk patient?
+
+Three lessons I took home:
+
+1. A prediction without an owner is just a number on a screen.
+2. Exportable, printable outputs beat beautiful dashboards in wards with one shared computer.
+3. "30-day readmission risk" only matters if the follow-up appointment system can absorb the extra attention.
+
+TRIP is a better platform because it survived contact with the people who will actually use it.`,
+    tags: ['AI/ML', 'Digital Health', 'Research'],
+    published_at: '2026-08-02T00:00:00.000Z',
+    status: 'published',
+  },
+  {
+    title: 'How I Structure a Health Analytics Project',
+    slug: 'structuring-health-analytics-project',
+    excerpt:
+      'Problem, data audit, one baseline, then the fancy stuff. The boring order that keeps projects alive.',
+    content: `Most health analytics projects don't fail on modeling. They fail on structure — starting with the model instead of the problem.
+
+Here is the order I force myself to follow:
+
+1. Problem in one sentence, with the person who feels the pain named explicitly.
+2. Data audit before any analysis: sources, owners, refresh cadence, known gaps.
+3. One simple baseline (a rule, a count, last-period comparison) that already delivers value.
+4. Then the advanced work: risk scores, forecasts, automation.
+5. A handover artifact: who maintains it, what breaks first, how they know.
+
+Steps 1–3 are where trust is built. Step 4 is where attention goes. Step 5 is what decides whether the work still matters in a year.`,
+    tags: ['Data Analytics', 'Workflow', 'Research'],
+    published_at: '2026-04-20T00:00:00.000Z',
+    status: 'published',
+  },
+];
+
+export const sampleExperience: Array<Omit<Experience, 'id' | 'created_at' | 'updated_at'>> = [  {
     title: 'Health Data Analyst',
     organization: 'Digital Health Solutions Ltd',
     location: 'Dodoma, Tanzania',
@@ -323,6 +381,7 @@ export const sampleSkills: Array<Omit<Skill, 'id' | 'created_at' | 'updated_at'>
 export interface SampleSyncResult {
   projects: number;
   certificates: number;
+  posts: number;
   gallery: number;
   experience: number;
   education: number;
@@ -337,6 +396,7 @@ export const syncSampleContentToSupabase = async (): Promise<SampleSyncResult> =
   const result: SampleSyncResult = {
     projects: 0,
     certificates: 0,
+    posts: 0,
     gallery: 0,
     experience: 0,
     education: 0,
@@ -373,6 +433,20 @@ export const syncSampleContentToSupabase = async (): Promise<SampleSyncResult> =
     const { error } = await supabase.from('certificates').insert(missingCertificates);
     if (error) throw error;
     result.certificates = missingCertificates.length;
+  }
+
+  const { data: postRows, error: postFetchError } = await supabase
+    .from('posts')
+    .select('slug');
+  if (postFetchError) throw postFetchError;
+  const existingPostSlugs = new Set(
+    (postRows ?? []).map((row: { slug: string }) => row.slug)
+  );
+  const missingPosts = samplePosts.filter((item) => !existingPostSlugs.has(item.slug));
+  if (missingPosts.length > 0) {
+    const { error } = await supabase.from('posts').insert(missingPosts);
+    if (error) throw error;
+    result.posts = missingPosts.length;
   }
 
   const { data: galleryRows, error: galleryFetchError } = await supabase

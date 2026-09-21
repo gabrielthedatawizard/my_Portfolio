@@ -36,7 +36,14 @@ const Contact: React.FC = () => {
 
     try {
       if (!isSupabaseConfigured) {
-        toast.error('Contact form is not configured yet.');
+        // No backend connected: fall back to the visitor's email app with the
+        // message pre-filled, so Send never dead-ends.
+        const subject = encodeURIComponent(formData.subject.trim() || 'Portfolio Inquiry');
+        const body = encodeURIComponent(
+          `Name: ${formData.name.trim()}\nEmail: ${formData.email.trim()}\n\n${formData.message.trim()}`
+        );
+        window.location.href = `mailto:${CONTACT.email}?subject=${subject}&body=${body}`;
+        toast.success('Opening your email app to send the message.');
         return;
       }
 

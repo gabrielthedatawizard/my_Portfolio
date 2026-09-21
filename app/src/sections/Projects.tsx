@@ -67,7 +67,6 @@ const sampleProjects: Project[] = [
     featured: true,
     start_date: '2023-06-01',
     end_date: '2023-09-30',
-    project_url: 'https://example.com',
     github_url: 'https://github.com/gabrielthedatawizard',
     status: 'published',
   },
@@ -85,7 +84,6 @@ const sampleProjects: Project[] = [
     featured: false,
     start_date: '2023-09-01',
     end_date: '2023-12-31',
-    project_url: 'https://example.com',
     github_url: 'https://github.com/gabrielthedatawizard',
     status: 'published',
   },
@@ -428,7 +426,13 @@ const Projects: React.FC = () => {
               variant="outline"
               size="lg"
               className="border-white/20 text-white hover:bg-white/10 rounded-full group relative overflow-hidden"
+              asChild
             >
+              <a
+                href="https://github.com/gabrielthedatawizard"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
               <span className="relative z-10">View All Projects</span>
               <motion.span
                 className="absolute inset-0 bg-gradient-to-r from-electric/20 to-purple-500/20"
@@ -437,6 +441,7 @@ const Projects: React.FC = () => {
                 transition={{ duration: 0.5 }}
               />
               <ArrowUpRight className="ml-2 h-5 w-5 relative z-10" />
+              </a>
             </Button>
           </motion.div>
         </motion.div>

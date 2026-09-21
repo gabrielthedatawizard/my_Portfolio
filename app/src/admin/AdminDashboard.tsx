@@ -20,6 +20,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
+import { AlertTriangle } from 'lucide-react';
+import { isSupabaseConfigured } from '@/lib/supabase';
 import { syncSampleContentToSupabase } from '@/lib/sampleContent';
 
 // Admin sections
@@ -97,6 +99,7 @@ const AdminDashboard = () => {
       const totalInserted =
         result.projects +
         result.certificates +
+        result.posts +
         result.gallery +
         result.experience +
         result.education +
@@ -259,6 +262,19 @@ const AdminDashboard = () => {
 
         {/* Content Area */}
         <div className="p-4 lg:p-8">
+          {!isSupabaseConfigured && (
+            <div className="mb-6 flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+              <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm text-amber-300 font-medium">Supabase not connected</p>
+                <p className="text-xs text-white/50 mt-0.5">
+                  The dashboard is running on local data — edits and uploads won't persist.
+                  Add <span className="font-mono">VITE_SUPABASE_URL</span> and{' '}
+                  <span className="font-mono">VITE_SUPABASE_ANON_KEY</span> to activate the backend (see app/SETUP.md).
+                </p>
+              </div>
+            </div>
+          )}
           {renderSection()}
         </div>
       </main>
