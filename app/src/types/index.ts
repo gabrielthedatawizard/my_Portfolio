@@ -213,3 +213,34 @@ export interface VisitorStats {
   todayPageViews: number;
   todayUniqueVisitors: number;
 }
+
+// LinkedIn Integration Types
+export interface LinkedInImportResult {
+  certifications: Certificate[];
+  skills: Skill[];
+  experience: Experience[];
+  education: Education[];
+  profile: Partial<Profile>;
+  warnings: string[];
+}
+
+export type LinkedInImportMode = 'merge' | 'replace';
+
+export interface LinkedInImportSummary {
+  certificationsImported: number;
+  skillsImported: number;
+  experienceImported: number;
+  educationImported: number;
+  profileUpdated: boolean;
+  errors: string[];
+}
+
+export type LinkedInSyncStatus = 'idle' | 'connecting' | 'syncing' | 'success' | 'error';
+
+export interface LinkedInSyncResult {
+  name?: string;
+  headline?: string;
+  profilePicture?: string;
+  email?: string;
+  location?: string;
+}

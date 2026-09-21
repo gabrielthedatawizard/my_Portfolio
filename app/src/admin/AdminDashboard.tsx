@@ -13,6 +13,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  Linkedin,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +31,7 @@ import EducationManager from './sections/EducationManager';
 import SkillsManager from './sections/SkillsManager';
 import MessagesManager from './sections/MessagesManager';
 import SettingsManager from './sections/SettingsManager';
+import LinkedInImportManager from './sections/LinkedInImportManager';
 
 type AdminSection =
   | 'dashboard'
@@ -41,9 +43,10 @@ type AdminSection =
   | 'education'
   | 'skills'
   | 'messages'
-  | 'settings';
+  | 'settings'
+  | 'linkedin-import';
 
-const menuItems: { id: AdminSection; label: string; icon: React.ElementType }[] = [
+const menuItems: { id: AdminSection; label: string; icon: React.ElementType; highlight?: boolean }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'projects', label: 'Projects', icon: FolderGit2 },
   { id: 'certificates', label: 'Certificates', icon: Award },
@@ -53,6 +56,7 @@ const menuItems: { id: AdminSection; label: string; icon: React.ElementType }[] 
   { id: 'education', label: 'Education', icon: GraduationCap },
   { id: 'skills', label: 'Skills', icon: Wrench },
   { id: 'messages', label: 'Messages', icon: MessageSquare },
+  { id: 'linkedin-import', label: 'LinkedIn Import', icon: Linkedin, highlight: true },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
@@ -131,6 +135,8 @@ const AdminDashboard = () => {
         return <MessagesManager />;
       case 'settings':
         return <SettingsManager />;
+      case 'linkedin-import':
+        return <LinkedInImportManager />;
       default:
         return (
           <DashboardHome
@@ -174,7 +180,11 @@ const AdminDashboard = () => {
               onClick={() => navigateToSection(item.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
                 activeSection === item.id
-                  ? 'bg-electric/10 text-electric'
+                  ? item.highlight
+                    ? 'bg-[#0077B5]/20 text-[#0077B5]'
+                    : 'bg-electric/10 text-electric'
+                  : item.highlight
+                  ? 'text-[#0077B5]/70 hover:bg-[#0077B5]/10 hover:text-[#0077B5]'
                   : 'text-white/70 hover:bg-white/5 hover:text-white'
               }`}
             >

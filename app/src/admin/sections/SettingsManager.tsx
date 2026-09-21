@@ -1,9 +1,10 @@
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
-import { User, Mail, MapPin, Link as LinkIcon, FileText, Save, Upload } from 'lucide-react';
+import { User, Mail, MapPin, Link as LinkIcon, FileText, Save, Upload, Linkedin, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
+import { useLinkedInSync } from '@/hooks/useLinkedInSync';
 
 type ProfileFormState = {
   name: string;
@@ -38,6 +39,7 @@ const SettingsManager = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingCv, setUploadingCv] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const linkedIn = useLinkedInSync();
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -75,6 +77,22 @@ const SettingsManager = () => {
 
     void loadProfile();
   }, []);
+
+  // When LinkedIn sync succeeds, merge the returned fields into the form
+  useEffect(() => {
+    if (linkedIn.status === 'success' && linkedIn.result) {
+      const r = linkedIn.result;
+      setProfile((prev) => ({
+        ...prev,
+        ...(r.name ? { name: r.name } : {}),
+        ...(r.email ? { email: r.email } : {}),
+      }));
+      toast.success('LinkedIn profile synced! Review and save changes.');
+    }
+    if (linkedIn.status === 'error' && linkedIn.error) {
+      toast.error(linkedIn.error);
+    }
+  }, [linkedIn.status, linkedIn.result, linkedIn.error]);
 
   const handleSave = async () => {
     if (!profile.name.trim() || !profile.email.trim()) {
@@ -186,6 +204,39 @@ const SettingsManager = () => {
             <User className="h-5 w-5 text-electric" />
             Profile Information
           </h3>
+
+          {/* LinkedIn Sync Button */}
+          <div className="flex items-center justify-between p-3 bg-[#0077B5]/10 border border-[#0077B5]/20 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Linkedin className="h-4 w-4 text-[#0077B5]" />
+              <div>
+                <p className="text-sm text-white font-medium">Sync from LinkedIn</p>
+                {linkedIn.lastSynced && (
+                  <p className="text-xs text-white/40">
+                    Last synced: {linkedIn.lastSynced.toLocaleDateString()}
+                  </p>
+                )}
+              </div>
+            </div>
+            {!linkedIn.isConfigured ? (
+              <span className="text-xs text-white/30">Set VITE_LINKEDIN_CLIENT_ID</span>
+            ) : linkedIn.status === 'success' ? (
+              <CheckCircle2 className="h-5 w-5 text-green-400" />
+            ) : linkedIn.status === 'error' ? (
+              <button onClick={linkedIn.reset} className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300">
+                <XCircle className="h-4 w-4" /> Retry
+              </button>
+            ) : (
+              <button
+                onClick={linkedIn.sync}
+                disabled={linkedIn.status === 'connecting' || linkedIn.status === 'syncing'}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0077B5] hover:bg-[#006097] disabled:opacity-50 text-white text-xs rounded-lg transition-colors"
+              >
+                <RefreshCw className={`h-3 w-3 ${linkedIn.status !== 'idle' ? 'animate-spin' : ''}`} />
+                {linkedIn.status === 'connecting' ? 'Connecting...' : linkedIn.status === 'syncing' ? 'Syncing...' : 'Sync Profile'}
+              </button>
+            )}
+          </div>
 
           <div className="space-y-4">
             <div>
