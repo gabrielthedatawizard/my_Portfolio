@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { registerLenis, resetScrollLocks } from '@/lib/scrollLock';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -42,6 +43,7 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
 
     setLenis(lenisInstance);
+    registerLenis(lenisInstance);
 
     // Connect Lenis to GSAP ScrollTrigger
     lenisInstance.on('scroll', ScrollTrigger.update);
@@ -55,6 +57,8 @@ export const AnimationProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     gsap.ticker.lagSmoothing(0);
 
     return () => {
+      registerLenis(null);
+      resetScrollLocks();
       lenisInstance.destroy();
       gsap.ticker.remove(raf);
     };

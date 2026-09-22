@@ -1,7 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Suspense, lazy, useEffect } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { motion } from 'framer-motion';
+import { resetScrollLocks } from '@/lib/scrollLock';
 
 // Heavy routes are code-split so public visitors never download them.
 // AdminLogin / AdminDashboard pull the whole admin CMS; CV pulls print libs.
@@ -110,6 +111,16 @@ const PublicLayout = () => {
   );
 };
 
+// Failsafe: every route change releases any stuck scroll lock, so a modal
+// that unmounted abnormally can never freeze the next page.
+const ScrollFailsafe = () => {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    resetScrollLocks();
+  }, [pathname]);
+  return null;
+};
+
 // App Router
 const RouteFallback = (
   <div className="min-h-screen bg-charcoal flex items-center justify-center">
@@ -123,6 +134,8 @@ const RouteFallback = (
 
 const AppRouter = () => {
   return (
+    <>
+    <ScrollFailsafe />
     <Routes>
       {/* Public Routes */}
       <Route path="/" element={<PublicLayout />} />
@@ -142,6 +155,7 @@ const AppRouter = () => {
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 };
 

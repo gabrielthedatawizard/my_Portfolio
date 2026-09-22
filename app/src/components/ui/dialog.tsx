@@ -3,7 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { useAnimation } from "@/context/AnimationContext"
+import { acquireScrollLock, releaseScrollLock } from "@/lib/scrollLock"
 
 function Dialog({
   ...props
@@ -53,18 +53,15 @@ function DialogContent({
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
 }) {
-  // Lenis smooth-scroll hijacks wheel events at the window level, which makes
-  // the page behind a modal scroll instead of the modal itself. While any
-  // dialog is open: freeze the root scroller and let the dialog scroll natively
-  // (data-lenis-prevent opts this container out of Lenis handling).
-  const { lenis } = useAnimation()
+  // While any dialog is open: freeze the root scroller (reference counted,
+  // so nesting or remounts can never leave the page stuck) and let the
+  // dialog scroll natively (data-lenis-prevent opts out of Lenis handling).
   React.useEffect(() => {
-    if (!lenis) return
-    lenis.stop()
+    acquireScrollLock()
     return () => {
-      lenis.start()
+      releaseScrollLock()
     }
-  }, [lenis])
+  }, [])
 
   return (
     <DialogPortal data-slot="dialog-portal">
