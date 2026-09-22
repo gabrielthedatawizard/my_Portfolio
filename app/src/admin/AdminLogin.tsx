@@ -52,15 +52,29 @@ const AdminLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-charcoal flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-white mb-2">
+    <div className="min-h-screen bg-charcoal flex flex-col lg:flex-row">
+      {/* Left: photo panel (half the screen on desktop, banner on mobile) */}
+      <div className="relative h-56 sm:h-64 lg:h-auto lg:w-1/2 lg:min-h-screen overflow-hidden">
+        <img
+          src="/portrait.jpg"
+          alt="Gabriel Myeye"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-charcoal/10 lg:bg-gradient-to-r lg:from-transparent lg:via-charcoal/20 lg:to-charcoal" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-10">
+          <p className="text-white/70 text-xs sm:text-sm uppercase tracking-widest mb-2">Admin Dashboard</p>
+          <h1 className="text-2xl lg:text-4xl font-bold text-white">
             Gabriel <span className="text-electric">Myeye</span>
           </h1>
-          <p className="text-white/60">Admin Dashboard</p>
+          <p className="text-white/60 text-sm mt-2 hidden sm:block">
+            Health Information Scientist and Data Analyst
+          </p>
         </div>
+      </div>
+
+      {/* Right: login form */}
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
+        <div className="w-full max-w-md">
 
         {/* Login Form */}
         <div className="bg-charcoal-light border border-white/5 rounded-2xl p-8">
@@ -150,6 +164,7 @@ const AdminLogin = () => {
           </div>
         </div>
         )}
+        </div>
       </div>
     </div>
   );
