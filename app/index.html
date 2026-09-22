@@ -50,6 +50,24 @@
         console.error('Error:', msg, 'Line:', line);
         return false;
       };
+      // Boot watchdog: if the app bundle never mounts (failed download,
+      // stale cached page, crash during import), say so plainly instead of
+      // spinning forever.
+      window.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          if (window.__APP_MOUNTED__) return;
+          const errorDisplay = document.getElementById('error-display');
+          if (!errorDisplay) return;
+          errorDisplay.innerHTML =
+            '<div class="error-box">' +
+            '<strong>The app code did not start.</strong><br><br>' +
+            'Most likely causes:<br>' +
+            '1. This page is stale: hard refresh (Ctrl+Shift+R).<br>' +
+            '2. A deployment is still building: check Vercel status.<br>' +
+            '3. A script failed to load: press F12, open Console, and copy any red text.<br>' +
+            '</div>';
+        }, 10000);
+      });
     </script>
   </body>
 </html>

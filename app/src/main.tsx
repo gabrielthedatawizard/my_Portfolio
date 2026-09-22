@@ -21,7 +21,11 @@ try {
       <App />
     </StrictMode>
   )
-  
+
+  // Boot marker read by the index.html watchdog below. If this line never
+  // runs, the bundle failed to load or crashed during import.
+  (window as unknown as { __APP_MOUNTED__?: boolean }).__APP_MOUNTED__ = true;
+
   console.log('App rendered successfully')
 } catch (error) {
   console.error('Failed to render:', error)
