@@ -20,7 +20,7 @@ try {
     <StrictMode>
       <App />
     </StrictMode>
-  )
+  );
 
   // Boot marker read by the index.html watchdog below. If this line never
   // runs, the bundle failed to load or crashed during import.
