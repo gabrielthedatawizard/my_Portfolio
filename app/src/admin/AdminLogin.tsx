@@ -60,13 +60,13 @@ const AdminLogin = () => {
           alt="Gabriel Myeye"
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/40 to-charcoal/10 lg:bg-gradient-to-r lg:from-transparent lg:via-charcoal/20 lg:to-charcoal" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/5" />
         <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-10">
-          <p className="text-white/70 text-xs sm:text-sm uppercase tracking-widest mb-2">Admin Dashboard</p>
-          <h1 className="text-2xl lg:text-4xl font-bold text-white">
-            Gabriel <span className="text-electric">Myeye</span>
+          <p className="text-white/85 text-xs sm:text-sm uppercase tracking-widest mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">Admin Dashboard</p>
+          <h1 className="text-2xl lg:text-4xl font-bold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]">
+            Gabriel <span className="text-electric-light">Myeye</span>
           </h1>
-          <p className="text-white/60 text-sm mt-2 hidden sm:block">
+          <p className="text-white/80 text-sm mt-2 hidden sm:block drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
             Health Information Scientist and Data Analyst
           </p>
         </div>
