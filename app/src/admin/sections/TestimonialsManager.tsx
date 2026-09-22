@@ -18,7 +18,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
+import { AdminEmptyState } from '@/components/EmptyIllustration';
 import { toast } from 'sonner';
 import type { Testimonial } from '@/types';
 import { supabase } from '@/lib/supabase';
@@ -191,18 +191,13 @@ const TestimonialsManager = () => {
       {loading ? (
         <p className="text-white/60">Loading testimonials…</p>
       ) : filtered.length === 0 ? (
-        <Empty className="bg-charcoal-light border-white/10 border text-white">
-          <EmptyHeader>
-            <EmptyMedia variant="icon" className="bg-electric/10 text-electric">
-              <Quote className="h-6 w-6" />
-            </EmptyMedia>
-            <EmptyTitle className="text-white">No testimonials yet</EmptyTitle>
-            <EmptyDescription className="text-white/50">
-              Ask a supervisor, lecturer or clinical partner for 2–3 sentences about your data work. Aim for 3+
-              published quotes — e.g. DHIS2 reporting, EHR analytics, research support.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+        <AdminEmptyState
+          variant="quotes"
+          title="No testimonials yet"
+          description="Ask a supervisor, lecturer or clinical partner for 2 to 3 sentences about your data work. Aim for 3 or more published quotes."
+          actionLabel="Add your first testimonial"
+          onAction={openCreate}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((t) => (

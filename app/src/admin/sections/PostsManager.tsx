@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import type { Post } from '../../types';
 import { supabase } from '@/lib/supabase';
 import { useContentViewCounts } from '@/hooks/useAnalytics';
+import { AdminEmptyState } from '@/components/EmptyIllustration';
 
 type PostFormValues = {
   title: string;
@@ -270,7 +271,24 @@ const PostsManager = () => {
       )}
 
       {!loading && filteredPosts.length === 0 && (
-        <p className="text-white/40">No posts found.</p>
+        searchQuery && posts.length > 0 ? (
+          <AdminEmptyState
+            variant="search"
+            title="No matches"
+            description="Try a different keyword or clear the search to see every note."
+          />
+        ) : (
+          <AdminEmptyState
+            variant="docs"
+            title="No posts yet"
+            description="Write your first field note. Short, practical notes on health data work outperform long essays."
+            actionLabel="Write your first post"
+            onAction={() => {
+              setEditingPost(null);
+              setIsDialogOpen(true);
+            }}
+          />
+        )
       )}
 
       <Dialog

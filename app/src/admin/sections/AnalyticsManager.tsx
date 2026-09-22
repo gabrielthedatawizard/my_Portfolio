@@ -50,7 +50,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
+import { AdminEmptyState } from '@/components/EmptyIllustration';
 import { ChartContainer, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { useProjects, usePosts } from '@/hooks/useData';
@@ -192,20 +192,18 @@ const AnalyticsManager = () => {
           <h2 className="text-2xl font-bold text-white">Visitors & Analytics</h2>
           <p className="text-white/60">Understand who views your portfolio and what wins their attention.</p>
         </div>
-        <Empty className="bg-charcoal-light border-white/10 border text-white">
-          <EmptyHeader>
-            <EmptyMedia variant="icon" className="bg-electric/10 text-electric">
-              <Users className="h-6 w-6" />
-            </EmptyMedia>
-            <EmptyTitle className="text-white">Analytics not connected</EmptyTitle>
-            <EmptyDescription className="text-white/50">
+        <AdminEmptyState
+          variant="analytics"
+          title="Analytics not connected"
+          description={
+            <>
               Set <span className="font-mono">VITE_SUPABASE_URL</span> and{' '}
               <span className="font-mono">VITE_SUPABASE_ANON_KEY</span> so page views are tracked
               into the <span className="font-mono">visitors</span> table. The dashboard below will
               light up automatically once data arrives.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
+            </>
+          }
+        />
       </div>
     );
   }

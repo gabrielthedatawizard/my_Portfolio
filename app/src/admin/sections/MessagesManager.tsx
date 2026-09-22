@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import type { ContactMessage } from '../../types';
 import { supabase } from '@/lib/supabase';
 import { useContactMessages } from '@/hooks/useData';
+import { AdminEmptyState } from '@/components/EmptyIllustration';
 
 const MessagesManager = () => {
   const { data: messages, loading, refetch } = useContactMessages();
@@ -64,6 +65,12 @@ const MessagesManager = () => {
 
       {loading ? (
         <div className="text-white/60">Loading messages...</div>
+      ) : messages.length === 0 ? (
+        <AdminEmptyState
+          variant="inbox"
+          title="Inbox zero"
+          description="New contact form messages land here with a reply shortcut. Share your portfolio link to start conversations."
+        />
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 space-y-2 max-h-[600px] overflow-y-auto">

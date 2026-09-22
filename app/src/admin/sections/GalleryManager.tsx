@@ -11,6 +11,7 @@ import {
 import { toast } from 'sonner';
 import type { GalleryItem } from '../../types';
 import { supabase } from '@/lib/supabase';
+import { AdminEmptyState } from '@/components/EmptyIllustration';
 
 type GalleryFormValues = {
   media_url: string;
@@ -248,7 +249,24 @@ const GalleryManager = () => {
       )}
 
       {!loading && filteredGallery.length === 0 && (
-        <p className="text-white/40">No gallery items for this category.</p>
+        activeCategory !== 'all' && gallery.length > 0 ? (
+          <AdminEmptyState
+            variant="search"
+            title="Nothing in this category"
+            description="No photos filed here yet. Try another category or upload one."
+          />
+        ) : (
+          <AdminEmptyState
+            variant="gallery"
+            title="Gallery is empty"
+            description="Field photos, event shots and speaking moments make the portfolio feel human. Start with one strong image."
+            actionLabel="Upload your first image"
+            onAction={() => {
+              setEditingItem(null);
+              setIsDialogOpen(true);
+            }}
+          />
+        )
       )}
 
       <Dialog
