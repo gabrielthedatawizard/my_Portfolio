@@ -62,13 +62,15 @@ const AdminLogin = () => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/5" />
         <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-10">
-          <p className="text-white/85 text-xs sm:text-sm uppercase tracking-widest mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">Admin Dashboard</p>
-          <h1 className="text-2xl lg:text-4xl font-bold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]">
-            Gabriel <span className="text-electric-light">Myeye</span>
-          </h1>
-          <p className="text-white/80 text-sm mt-2 hidden sm:block drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-            Health Information Scientist and Data Analyst
-          </p>
+          <div className="inline-block rounded-2xl border border-white/15 bg-black/45 px-5 py-4 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.5)]">
+            <p className="text-white text-xs sm:text-sm uppercase tracking-widest mb-1.5">Admin Dashboard</p>
+            <h1 className="text-2xl lg:text-4xl font-bold text-white leading-tight">
+              Gabriel <span className="text-electric-light">Myeye</span>
+            </h1>
+            <p className="text-white/85 text-sm mt-1.5 hidden sm:block">
+              Health Information Scientist and Data Analyst
+            </p>
+          </div>
         </div>
       </div>
 
